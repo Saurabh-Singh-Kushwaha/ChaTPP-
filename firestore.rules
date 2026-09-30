@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+
+
+    /* =========================
+       USERS
+    ========================= */
+
+    match /users/{userId} {
+
+      // Any authenticated user can
+      // discover registered profiles.
+
+      allow read:
+        if request.auth != null;
+
+
+      // A user can create only
+      // their own profile.
+
+      allow create:
+        if request.auth != null
+        && request.auth.uid == userId;
+
+
+      // User can update only
+      // their own profile.
+
+      allow update:
+        if request.auth != null
+        && request.auth.uid == userId;
+
+
+      // Users cannot delete their profile
+      // from the client yet.
+
+      allow delete:
+        if false;
+    }
+
+
+    /* =========================
+       UNIQUE HANDLES
+    ========================= */
+
+    match /handles/{handle} {
+
+      allow read:
+        if request.auth != null;
+
+
+      allow create:
+        if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+
+
+      allow update:
+        if false;
+
+
+      allow delete:
+        if false;
+    }
+
+
+    /* =========================
+       DEFAULT DENY
+    ========================= */
+
+    match /{document=**} {
+
+      allow read, write:
+        if false;
+    }
+
+  }
+}

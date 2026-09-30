@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
+  <meta
+    name="theme-color"
+    content="#6c63ff"
+  >
+
+  <meta
+    name="description"
+    content="Connect privately with your friends through messages, images, videos and calls."
+  >
+
+  <title>Connect — Private Chat</title>
+
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
+
+</head>
+
+
+<body>
+
+
+  <!-- =========================
+       AUTH PAGE
+  ========================== -->
+
+  <main class="auth-page">
+
+
+    <!-- BRAND -->
+
+    <section class="brand-section">
+
+      <div class="brand-icon">
+        C
+      </div>
+
+      <h1>
+        Connect
+      </h1>
+
+      <p>
+        Chat privately, share moments,
+        and stay connected.
+      </p>
+
+    </section>
+
+
+    <!-- AUTH CARD -->
+
+    <section class="auth-card">
+
+
+      <!-- LOGIN / SIGNUP TABS -->
+
+      <div class="auth-tabs">
+
+        <button
+          id="loginTab"
+          class="auth-tab active"
+          type="button"
+        >
+          Login
+        </button>
+
+
+        <button
+          id="signupTab"
+          class="auth-tab"
+          type="button"
+        >
+          Sign Up
+        </button>
+
+      </div>
+
+
+      <!-- =========================
+           LOGIN FORM
+      ========================== -->
+
+      <form
+        id="loginForm"
+        class="auth-form"
+      >
+
+        <label for="loginEmail">
+          Email
+        </label>
+
+        <input
+          id="loginEmail"
+          type="email"
+          placeholder="Enter your email"
+          autocomplete="email"
+          required
+        >
+
+
+        <label for="loginPassword">
+          Password
+        </label>
+
+        <input
+          id="loginPassword"
+          type="password"
+          placeholder="Enter your password"
+          autocomplete="current-password"
+          required
+        >
+
+
+        <!-- FORGOT PASSWORD -->
+
+        <button
+          id="forgotPasswordBtn"
+          class="forgot-password"
+          type="button"
+        >
+          Forgot password?
+        </button>
+
+
+        <!-- LOGIN -->
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Login
+        </button>
+
+      </form>
+
+
+      <!-- =========================
+           SIGNUP FORM
+      ========================== -->
+
+      <form
+        id="signupForm"
+        class="auth-form hidden"
+      >
+
+        <label for="signupEmail">
+          Email
+        </label>
+
+        <input
+          id="signupEmail"
+          type="email"
+          placeholder="Enter your email"
+          autocomplete="email"
+          required
+        >
+
+
+        <label for="signupPassword">
+          Password
+        </label>
+
+        <input
+          id="signupPassword"
+          type="password"
+          placeholder="Minimum 6 characters"
+          autocomplete="new-password"
+          minlength="6"
+          required
+        >
+
+
+        <label for="signupConfirmPassword">
+          Confirm Password
+        </label>
+
+        <input
+          id="signupConfirmPassword"
+          type="password"
+          placeholder="Confirm password"
+          autocomplete="new-password"
+          minlength="6"
+          required
+        >
+
+
+        <button
+          class="primary-btn"
+          type="submit"
+        >
+          Create Account
+        </button>
+
+      </form>
+
+
+      <!-- =========================
+           DIVIDER
+      ========================== -->
+
+      <div class="divider">
+
+        <span>
+          OR
+        </span>
+
+      </div>
+
+
+      <!-- =========================
+           GOOGLE LOGIN
+      ========================== -->
+
+      <button
+        id="googleBtn"
+        class="google-btn"
+        type="button"
+      >
+
+        <span class="google-symbol">
+          G
+        </span>
+
+        Continue with Google
+
+      </button>
+
+
+      <!-- =========================
+           PHONE LOGIN
+      ========================== -->
+
+      <div class="phone-login">
+
+
+        <button
+          id="showPhoneBtn"
+          class="secondary-btn"
+          type="button"
+        >
+          📱 Continue with Phone
+        </button>
+
+
+        <div
+          id="phoneSection"
+          class="phone-section hidden"
+        >
+
+
+          <label for="phoneNumber">
+            Phone Number
+          </label>
+
+
+          <input
+            id="phoneNumber"
+            type="tel"
+            placeholder="+91XXXXXXXXXX"
+            autocomplete="tel"
+            inputmode="tel"
+          >
+
+
+          <!-- Firebase reCAPTCHA -->
+
+          <div
+            id="recaptcha-container"
+          ></div>
+
+
+          <!-- SEND OTP -->
+
+          <button
+            id="sendOtpBtn"
+            class="primary-btn"
+            type="button"
+          >
+            Send OTP
+          </button>
+
+
+          <!-- OTP -->
+
+          <div
+            id="otpSection"
+            class="phone-section hidden"
+          >
+
+            <label for="otpCode">
+              Verification Code
+            </label>
+
+
+            <input
+              id="otpCode"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="6"
+              placeholder="Enter 6-digit OTP"
+            >
+
+
+            <button
+              id="verifyOtpBtn"
+              class="primary-btn"
+              type="button"
+            >
+              Verify OTP
+            </button>
+
+          </div>
+
+
+        </div>
+
+      </div>
+
+
+      <!-- =========================
+           MESSAGE
+      ========================== -->
+
+      <p
+        id="authMessage"
+        class="auth-message"
+        aria-live="polite"
+      ></p>
+
+
+    </section>
+
+
+  </main>
+
+
+  <!-- =========================
+       FIREBASE AUTH SCRIPT
+  ========================== -->
+
+  <script
+    type="module"
+    src="js/auth.js"
+  ></script>
+
+
+</body>
+
+</html>
+
+  

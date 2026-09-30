@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Set Up Profile</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+  <main class="setup-page">
+
+    <section class="setup-card">
+
+      <div class="setup-avatar">
+        ?
+      </div>
+
+      <h1>Set up your profile</h1>
+
+      <p class="muted">
+        Choose how other users will find you.
+      </p>
+
+
+      <form id="profileForm">
+
+        <label>Display Name</label>
+
+        <input
+          id="displayName"
+          type="text"
+          maxlength="40"
+          placeholder="Your name"
+          required
+        >
+
+
+        <label>Unique Handle</label>
+
+        <div class="handle-input">
+
+          <span>@</span>
+
+          <input
+            id="handle"
+            type="text"
+            maxlength="25"
+            placeholder="yourhandle"
+            autocomplete="off"
+            required
+          >
+
+        </div>
+
+        <small>
+          3–25 characters. Letters, numbers and underscores only.
+        </small>
+
+
+        <label>Bio</label>
+
+        <textarea
+          id="bio"
+          maxlength="160"
+          placeholder="Tell people a little about yourself..."
+        ></textarea>
+
+
+        <button
+          id="saveProfileBtn"
+          class="primary-btn"
+          type="submit"
+        >
+          Continue
+        </button>
+
+      </form>
+
+
+      <p
+        id="setupMessage"
+        class="auth-message"
+      ></p>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="js/profile-setup.js"
+  ></script>
+
+</body>
+</html>

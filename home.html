@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Connect</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+  <header class="topbar">
+
+    <div class="brand-small">
+      Connect
+    </div>
+
+
+    <div class="top-actions">
+
+      <button
+        id="notificationBtn"
+        class="icon-btn"
+        type="button"
+      >
+        🔔
+      </button>
+
+      <button
+        id="logoutBtn"
+        class="icon-btn"
+        type="button"
+      >
+        ↪
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main class="home-page">
+
+    <section class="welcome-section">
+
+      <h1 id="welcomeText">
+        People
+      </h1>
+
+      <p>
+        Find people using their name or handle.
+      </p>
+
+    </section>
+
+
+    <div class="search-box">
+
+      <span>🔍</span>
+
+      <input
+        id="searchInput"
+        type="search"
+        placeholder="Search name or @handle..."
+        autocomplete="off"
+      >
+
+    </div>
+
+
+    <section>
+
+      <div
+        id="usersList"
+        class="users-list"
+      ></div>
+
+
+      <div
+        id="emptyState"
+        class="empty-state hidden"
+      >
+        No users found.
+      </div>
+
+
+      <div
+        id="loadingState"
+        class="loading-state"
+      >
+        Loading users...
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="js/home.js"
+  ></script>
+
+</body>
+</html>

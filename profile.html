@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Profile</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+  <header class="topbar">
+
+    <button
+      id="backBtn"
+      class="back-btn"
+      type="button"
+    >
+      ←
+    </button>
+
+    <div class="brand-small">
+      Profile
+    </div>
+
+    <div></div>
+
+  </header>
+
+
+  <main class="profile-page">
+
+    <section
+      id="profileCard"
+      class="profile-card"
+    >
+
+      <div
+        id="profileAvatar"
+        class="profile-avatar"
+      >
+        ?
+      </div>
+
+
+      <h1 id="profileName">
+        Loading...
+      </h1>
+
+
+      <p
+        id="profileHandle"
+        class="profile-handle"
+      >
+      </p>
+
+
+      <p
+        id="profileBio"
+        class="profile-bio"
+      >
+      </p>
+
+
+      <div class="profile-actions">
+
+        <button
+          id="chatBtn"
+          class="primary-btn"
+          type="button"
+        >
+          💬 Chat
+        </button>
+
+
+        <button
+          id="friendBtn"
+          class="secondary-btn"
+          type="button"
+        >
+          🤝 Add Friend
+        </button>
+
+
+        <button
+          id="shareBtn"
+          class="secondary-btn"
+          type="button"
+        >
+          🔗 Share Profile
+        </button>
+
+      </div>
+
+
+      <section class="profile-media-section">
+
+        <h2>Shared Media</h2>
+
+        <p class="muted">
+          Media sharing will appear here after chat is connected.
+        </p>
+
+      </section>
+
+    </section>
+
+
+    <div
+      id="profileError"
+      class="error-box hidden"
+    >
+    </div>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="js/profile.js"
+  ></script>
+
+</body>
+</html>
