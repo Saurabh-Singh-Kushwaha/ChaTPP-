@@ -170,15 +170,9 @@ async function routeUser(user) {
 
   if (!user) return;
 
-  try {
-
-    const userRef =
-      doc(
-        db,
-        "users",
-        user.uid
-      );
-
+  window.location.href =
+    "privacy-lock.html";
+}
     const snapshot =
       await getDoc(userRef);
 
