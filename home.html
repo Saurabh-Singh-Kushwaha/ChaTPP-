@@ -108,6 +108,25 @@
     type="module"
     src="js/home.js"
   ></script>
+<script type="module">
+  import { auth } from "./js/firebase.js";
+  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
+  onAuthStateChanged(auth, (user) => {
+
+    if (!user) {
+      window.location.href = "index.html";
+      return;
+    }
+
+    const unlocked =
+      sessionStorage.getItem("privacyUnlocked");
+
+    if (unlocked !== user.uid) {
+      window.location.href = "privacy-lock.html";
+    }
+
+  });
+</script>
 </body>
 </html>
