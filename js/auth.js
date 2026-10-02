@@ -1,5 +1,3 @@
-// js/auth.js
-
 import {
   auth,
   db,
@@ -12,8 +10,7 @@ import {
   signInWithPopup,
   RecaptchaVerifier,
   signInWithPhoneNumber,
-  sendPasswordResetEmail,
-  onAuthStateChanged
+  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
 import {
@@ -63,14 +60,8 @@ const authMessage =
   document.getElementById("authMessage");
 
 
-// ========================================
-// VARIABLES
-// ========================================
-
 let confirmationResult = null;
-
 let recaptchaVerifier = null;
-
 let isProcessing = false;
 
 
@@ -84,7 +75,8 @@ function showMessage(message, type = "") {
 
   authMessage.textContent = message;
 
-  authMessage.className = "auth-message";
+  authMessage.className =
+    "auth-message";
 
   if (type === "error") {
     authMessage.classList.add("error");
@@ -97,7 +89,7 @@ function showMessage(message, type = "") {
 
 
 // ========================================
-// BUTTON LOADING
+// LOADING
 // ========================================
 
 function setButtonLoading(
@@ -118,7 +110,7 @@ function setButtonLoading(
 
 
 // ========================================
-// SWITCH LOGIN / SIGNUP
+// LOGIN / SIGNUP TABS
 // ========================================
 
 function switchTab(mode) {
@@ -126,27 +118,22 @@ function switchTab(mode) {
   if (mode === "login") {
 
     loginTab.classList.add("active");
-
     signupTab.classList.remove("active");
 
     loginForm.classList.remove("hidden");
-
     signupForm.classList.add("hidden");
 
   } else {
 
     signupTab.classList.add("active");
-
     loginTab.classList.remove("active");
 
     signupForm.classList.remove("hidden");
-
     loginForm.classList.add("hidden");
 
   }
 
   showMessage("");
-
 }
 
 
@@ -163,7 +150,7 @@ signupTab.addEventListener(
 
 
 // ========================================
-// CHECK USER PROFILE
+// ROUTE AFTER LOGIN
 // ========================================
 
 async function routeUser(user) {
@@ -172,37 +159,6 @@ async function routeUser(user) {
 
   window.location.href =
     "privacy-lock.html";
-}
-    const snapshot =
-      await getDoc(userRef);
-
-
-    if (snapshot.exists()) {
-
-      window.location.href =
-        "home.html";
-
-    } else {
-
-      window.location.href =
-        "profile-setup.html";
-
-    }
-
-  } catch (error) {
-
-    console.error(
-      "Profile check error:",
-      error
-    );
-
-    showMessage(
-      "Could not load your account. Please try again.",
-      "error"
-    );
-
-  }
-
 }
 
 
@@ -217,6 +173,7 @@ loginForm.addEventListener(
     event.preventDefault();
 
     if (isProcessing) return;
+
 
     const email =
       document
@@ -246,10 +203,13 @@ loginForm.addEventListener(
       isProcessing = true;
 
       setButtonLoading(
-        loginForm.querySelector("button[type='submit']"),
+        loginForm.querySelector(
+          "button[type='submit']"
+        ),
         true,
         "Login"
       );
+
 
       showMessage(
         "Signing you in..."
@@ -335,7 +295,9 @@ loginForm.addEventListener(
       isProcessing = false;
 
       setButtonLoading(
-        loginForm.querySelector("button[type='submit']"),
+        loginForm.querySelector(
+          "button[type='submit']"
+        ),
         false,
         "Login"
       );
@@ -423,14 +385,6 @@ forgotPasswordBtn.addEventListener(
 
       } else if (
         error.code ===
-        "auth/user-not-found"
-      ) {
-
-        message =
-          "No account was found with this email.";
-
-      } else if (
-        error.code ===
         "auth/too-many-requests"
       ) {
 
@@ -462,7 +416,7 @@ forgotPasswordBtn.addEventListener(
 
 
 // ========================================
-// EMAIL SIGN UP
+// EMAIL SIGNUP
 // ========================================
 
 signupForm.addEventListener(
@@ -480,16 +434,16 @@ signupForm.addEventListener(
         .value
         .trim();
 
-
     const password =
       document
         .getElementById("signupPassword")
         .value;
 
-
     const confirmPassword =
       document
-        .getElementById("signupConfirmPassword")
+        .getElementById(
+          "signupConfirmPassword"
+        )
         .value;
 
 
@@ -531,7 +485,9 @@ signupForm.addEventListener(
       isProcessing = true;
 
       setButtonLoading(
-        signupForm.querySelector("button[type='submit']"),
+        signupForm.querySelector(
+          "button[type='submit']"
+        ),
         true,
         "Create Account"
       );
@@ -563,7 +519,7 @@ signupForm.addEventListener(
             "profile-setup.html";
 
         },
-        400
+        500
       );
 
 
@@ -617,7 +573,9 @@ signupForm.addEventListener(
       isProcessing = false;
 
       setButtonLoading(
-        signupForm.querySelector("button[type='submit']"),
+        signupForm.querySelector(
+          "button[type='submit']"
+        ),
         false,
         "Create Account"
       );
@@ -645,8 +603,8 @@ googleBtn.addEventListener(
 
       googleBtn.disabled = true;
 
-      googleBtn.innerHTML =
-        "Connecting to Google...";
+      googleBtn.textContent =
+        "Connecting...";
 
 
       showMessage(
@@ -680,7 +638,7 @@ googleBtn.addEventListener(
       ) {
 
         showMessage(
-          "Google sign-in was cancelled.",
+          "Google sign-in cancelled.",
           "error"
         );
 
@@ -690,14 +648,14 @@ googleBtn.addEventListener(
       ) {
 
         showMessage(
-          "The browser blocked the Google popup.",
+          "Browser blocked the Google popup.",
           "error"
         );
 
       } else {
 
         showMessage(
-          "Google sign-in failed. Please try again.",
+          "Google sign-in failed.",
           "error"
         );
 
@@ -720,7 +678,7 @@ googleBtn.addEventListener(
 
 
 // ========================================
-// PHONE LOGIN
+// SHOW PHONE LOGIN
 // ========================================
 
 showPhoneBtn.addEventListener(
@@ -747,7 +705,7 @@ showPhoneBtn.addEventListener(
 
 
 // ========================================
-// INITIALIZE RECAPTCHA
+// RECAPTCHA
 // ========================================
 
 function initializeRecaptcha() {
@@ -764,12 +722,13 @@ function initializeRecaptcha() {
         auth,
         "recaptcha-container",
         {
+
           size: "normal",
 
           callback: () => {
 
             showMessage(
-              "Verification completed. You can send the OTP.",
+              "Verification completed.",
               "success"
             );
 
@@ -778,11 +737,12 @@ function initializeRecaptcha() {
           "expired-callback": () => {
 
             showMessage(
-              "reCAPTCHA expired. Please verify again.",
+              "reCAPTCHA expired.",
               "error"
             );
 
           }
+
         }
       );
 
@@ -790,7 +750,7 @@ function initializeRecaptcha() {
     recaptchaVerifier
       .render()
       .catch(
-        (error) => {
+        error => {
 
           console.error(
             "reCAPTCHA render error:",
@@ -804,7 +764,7 @@ function initializeRecaptcha() {
   } catch (error) {
 
     console.error(
-      "reCAPTCHA initialization error:",
+      "reCAPTCHA error:",
       error
     );
 
@@ -816,7 +776,7 @@ function initializeRecaptcha() {
 
 
 // ========================================
-// SEND PHONE OTP
+// SEND OTP
 // ========================================
 
 sendOtpBtn.addEventListener(
@@ -836,7 +796,7 @@ sendOtpBtn.addEventListener(
     if (!phoneNumber) {
 
       showMessage(
-        "Enter your phone number first.",
+        "Enter your phone number.",
         "error"
       );
 
@@ -849,7 +809,7 @@ sendOtpBtn.addEventListener(
     ) {
 
       showMessage(
-        "Use the international format, for example +91XXXXXXXXXX.",
+        "Use international format, e.g. +91XXXXXXXXXX.",
         "error"
       );
 
@@ -897,7 +857,7 @@ sendOtpBtn.addEventListener(
 
 
       showMessage(
-        "OTP sent. Enter the 6-digit code.",
+        "OTP sent successfully.",
         "success"
       );
 
@@ -911,24 +871,16 @@ sendOtpBtn.addEventListener(
 
 
       let message =
-        "Could not send OTP. Please try again.";
+        "Could not send OTP.";
 
 
       if (
-        error.message ===
-        "RECAPTCHA_NOT_READY"
-      ) {
-
-        message =
-          "Security verification is not ready. Please refresh and try again.";
-
-      } else if (
         error.code ===
         "auth/invalid-phone-number"
       ) {
 
         message =
-          "Enter a valid phone number.";
+          "Invalid phone number.";
 
       } else if (
         error.code ===
@@ -936,7 +888,7 @@ sendOtpBtn.addEventListener(
       ) {
 
         message =
-          "Too many attempts. Please try again later.";
+          "Too many attempts. Try later.";
 
       } else if (
         error.code ===
@@ -944,7 +896,7 @@ sendOtpBtn.addEventListener(
       ) {
 
         message =
-          "Phone verification quota has been exceeded.";
+          "Phone verification quota exceeded.";
 
       }
 
@@ -953,9 +905,6 @@ sendOtpBtn.addEventListener(
         message,
         "error"
       );
-
-
-      await resetRecaptcha();
 
     } finally {
 
@@ -973,7 +922,7 @@ sendOtpBtn.addEventListener(
 
 
 // ========================================
-// VERIFY PHONE OTP
+// VERIFY OTP
 // ========================================
 
 verifyOtpBtn.addEventListener(
@@ -993,7 +942,7 @@ verifyOtpBtn.addEventListener(
     if (!confirmationResult) {
 
       showMessage(
-        "Request an OTP first.",
+        "Send an OTP first.",
         "error"
       );
 
@@ -1057,7 +1006,7 @@ verifyOtpBtn.addEventListener(
       ) {
 
         message =
-          "The OTP is incorrect.";
+          "Incorrect OTP.";
 
       } else if (
         error.code ===
@@ -1065,7 +1014,7 @@ verifyOtpBtn.addEventListener(
       ) {
 
         message =
-          "The OTP has expired. Request a new one.";
+          "OTP expired. Request a new one.";
 
       }
 
@@ -1086,56 +1035,6 @@ verifyOtpBtn.addEventListener(
         "Verify OTP";
 
     }
-
-  }
-);
-
-
-// ========================================
-// RESET RECAPTCHA
-// ========================================
-
-async function resetRecaptcha() {
-
-  try {
-
-    if (recaptchaVerifier) {
-
-      await recaptchaVerifier.clear();
-
-    }
-
-  } catch (error) {
-
-    console.log(
-      "reCAPTCHA cleanup:",
-      error
-    );
-
-  }
-
-
-  recaptchaVerifier = null;
-
-}
-
-
-// ========================================
-// AUTH STATE
-// ========================================
-
-onAuthStateChanged(
-  auth,
-  (user) => {
-
-    if (!user) {
-      return;
-    }
-
-    console.log(
-      "Authenticated user:",
-      user.uid
-    );
 
   }
 );
