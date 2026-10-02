@@ -1,3 +1,5 @@
+// js/profile.js
+
 import {
   auth,
   db
@@ -8,15 +10,15 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
 import {
+  collection,
   doc,
   getDoc,
+  getDocs,
+  limit,
+  query,
   setDoc,
   updateDoc,
-  getDocs,
-  collection,
-  query,
-  where,
-  limit
+  where
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 
@@ -48,6 +50,19 @@ const friendBtn =
 const shareBtn =
   document.getElementById("shareBtn");
 
+const relationshipStatus =
+  document.getElementById(
+    "relationshipStatus"
+  );
+
+const backBtn =
+  document.getElementById("backBtn");
+
+const profileMenuBtn =
+  document.getElementById(
+    "profileMenuBtn"
+  );
+
 
 // ========================================
 // PROFILE UID
@@ -61,12 +76,17 @@ const params =
 const profileUid =
   params.get("uid");
 
+
+// ========================================
+// VARIABLES
+// ========================================
+
 let currentUser = null;
 let viewedUser = null;
 
 
 // ========================================
-// AUTH + PRIVACY LOCK
+// AUTH
 // ========================================
 
 if (!profileUid) {
@@ -90,13 +110,17 @@ if (!profileUid) {
       }
 
 
+      // Privacy lock
       const unlocked =
         sessionStorage.getItem(
           "privacyUnlocked"
         );
 
 
-      if (unlocked !== user.uid) {
+      if (
+        unlocked !==
+        user.uid
+      ) {
 
         window.location.href =
           "privacy-lock.html";
@@ -105,7 +129,9 @@ if (!profileUid) {
       }
 
 
-      currentUser = user;
+      currentUser =
+        user;
+
 
       await loadProfile();
 
@@ -166,14 +192,14 @@ async function loadProfile() {
     }
 
 
-    // Other user's profile
+    // Other user
     await setupOtherProfile();
 
 
   } catch (error) {
 
     console.error(
-      "Profile loading error:",
+      "Profile error:",
       error
     );
 
@@ -213,16 +239,26 @@ function renderProfile() {
     viewedUser.photoURL
   ) {
 
-    profileAvatar.innerHTML = `
+    profileAvatar.innerHTML = "";
 
-      <img
-        src="${escapeAttribute(
-          viewedUser.photoURL
-        )}"
-        alt="Profile picture"
-      >
 
-    `;
+    const img =
+      document.createElement(
+        "img"
+      );
+
+
+    img.src =
+      viewedUser.photoURL;
+
+    img.alt =
+      "Profile picture";
+
+
+    profileAvatar.appendChild(
+      img
+    );
+
 
   } else {
 
@@ -246,8 +282,13 @@ function setupOwnProfile() {
   friendBtn.style.display =
     "none";
 
+
   chatBtn.style.display =
     "none";
+
+
+  relationshipStatus.textContent =
+    "This is your profile.";
 
 
   shareBtn.addEventListener(
@@ -255,6 +296,17 @@ function setupOwnProfile() {
     shareProfile
   );
 
+
+  profileMenuBtn.addEventListener(
+    "click",
+    () => {
+
+      alert(
+        "Profile settings will be added in the account settings phase."
+      );
+
+    }
+  );
 
 }
 
@@ -266,10 +318,10 @@ function setupOwnProfile() {
 async function setupOtherProfile() {
 
   const status =
-    await getFriendshipStatus();
+    await getRelationshipStatus();
 
 
-  updateButtons(
+  updateRelationshipUI(
     status
   );
 
@@ -279,18 +331,26 @@ async function setupOtherProfile() {
     shareProfile
   );
 
+
+  profileMenuBtn.addEventListener(
+    "click",
+    () => {
+
+      alert(
+        "More profile options will be added later."
+      );
+
+    }
+  );
+
 }
 
 
 // ========================================
-// GET FRIENDSHIP STATUS
+// RELATIONSHIP STATUS
 // ========================================
 
-async function getFriendshipStatus() {
-
-  // ----------------------------
-  // Check existing friendship
-  // ----------------------------
+async function getRelationshipStatus() {
 
   const friendshipId =
     createFriendshipId(
@@ -317,15 +377,14 @@ async function getFriendshipStatus() {
     friendshipSnap.exists()
   ) {
 
-    return "friends";
+    return {
+      type: "friends"
+    };
 
   }
 
 
-  // ----------------------------
-  // Request sent by me
-  // ----------------------------
-
+  // Request sent
   const sentQuery =
     query(
 
@@ -357,25 +416,30 @@ async function getFriendshipStatus() {
     );
 
 
-  const sentSnapshot =
+  const sentSnap =
     await getDocs(
       sentQuery
     );
 
 
   if (
-    !sentSnapshot.empty
+    !sentSnap.empty
   ) {
 
-    return "sent";
+    return {
+
+      type:
+        "sent",
+
+      requestId:
+        sentSnap.docs[0].id
+
+    };
 
   }
 
 
-  // ----------------------------
   // Request received
-  // ----------------------------
-
   const receivedQuery =
     query(
 
@@ -407,51 +471,75 @@ async function getFriendshipStatus() {
     );
 
 
-  const receivedSnapshot =
+  const receivedSnap =
     await getDocs(
       receivedQuery
     );
 
 
   if (
-    !receivedSnapshot.empty
+    !receivedSnap.empty
   ) {
 
-    return "received";
+    return {
+
+      type:
+        "received",
+
+      requestId:
+        receivedSnap.docs[0].id
+
+    };
 
   }
 
 
-  return "none";
+  return {
+    type: "none"
+  };
 
 }
 
 
 // ========================================
-// UPDATE BUTTONS
+// UPDATE RELATIONSHIP UI
 // ========================================
 
-function updateButtons(
-  status
+function updateRelationshipUI(
+  relationship
 ) {
 
-  // ----------------------------
-  // Friends
-  // ----------------------------
+  chatBtn.style.display =
+    "none";
+
+
+  friendBtn.disabled =
+    false;
+
+
+  friendBtn.onclick =
+    null;
+
+
+  // ------------------------------
+  // FRIENDS
+  // ------------------------------
 
   if (
-    status === "friends"
+    relationship.type ===
+    "friends"
   ) {
 
     friendBtn.textContent =
       "✓ Friends";
 
+
     friendBtn.disabled =
       true;
 
-    friendBtn.classList.add(
-      "disabled"
-    );
+
+    relationshipStatus.textContent =
+      "You are connected with this user.";
 
 
     chatBtn.style.display =
@@ -475,106 +563,85 @@ function updateButtons(
   }
 
 
-  // ----------------------------
-  // Request sent
-  // ----------------------------
+  // ------------------------------
+  // REQUEST SENT
+  // ------------------------------
 
   if (
-    status === "sent"
+    relationship.type ===
+    "sent"
   ) {
 
     friendBtn.textContent =
-      "Request Sent";
+      "⏳ Request Sent";
+
 
     friendBtn.disabled =
       true;
 
-    friendBtn.classList.add(
-      "disabled"
-    );
 
-
-    chatBtn.style.display =
-      "none";
+    relationshipStatus.textContent =
+      "Waiting for this user to accept your request.";
 
 
     return;
   }
 
 
-  // ----------------------------
-  // Request received
-  // ----------------------------
+  // ------------------------------
+  // REQUEST RECEIVED
+  // ------------------------------
 
   if (
-    status === "received"
+    relationship.type ===
+    "received"
   ) {
 
     friendBtn.textContent =
-      "Accept Request";
-
-    friendBtn.disabled =
-      false;
+      "✅ Accept Request";
 
 
     friendBtn.onclick =
-      acceptRequest;
+      () => {
+
+        acceptRequest(
+          relationship.requestId
+        );
+
+      };
 
 
-    chatBtn.style.display =
-      "none";
+    relationshipStatus.textContent =
+      "This user has sent you a friend request.";
 
 
     return;
   }
 
 
-  // ----------------------------
-  // No relationship
-  // ----------------------------
+  // ------------------------------
+  // NO CONNECTION
+  // ------------------------------
 
   friendBtn.textContent =
     "🤝 Add Friend";
-
-  friendBtn.disabled =
-    false;
 
 
   friendBtn.onclick =
     sendFriendRequest;
 
 
-  chatBtn.style.display =
-    "none";
+  relationshipStatus.textContent =
+    "Add this person as a friend to start chatting.";
 
 }
 
 
 // ========================================
-// SEND FRIEND REQUEST
+// SEND REQUEST
 // ========================================
 
 async function sendFriendRequest() {
-
-  if (
-    !currentUser ||
-    !profileUid
-  ) {
-
-    return;
-
-  }
-
-
-  if (
-    currentUser.uid ===
-    profileUid
-  ) {
-
-    return;
-
-  }
-
 
   try {
 
@@ -615,18 +682,17 @@ async function sendFriendRequest() {
 
 
     friendBtn.textContent =
-      "Request Sent";
+      "⏳ Request Sent";
 
 
-    alert(
-      "Friend request sent!"
-    );
+    relationshipStatus.textContent =
+      "Friend request sent. Waiting for acceptance.";
 
 
   } catch (error) {
 
     console.error(
-      "Send request error:",
+      "Friend request error:",
       error
     );
 
@@ -648,7 +714,9 @@ async function sendFriendRequest() {
 // ACCEPT REQUEST
 // ========================================
 
-async function acceptRequest() {
+async function acceptRequest(
+  requestId
+) {
 
   try {
 
@@ -656,70 +724,60 @@ async function acceptRequest() {
       true;
 
 
-    // Find pending request
-    const requestQuery =
-      query(
-
-        collection(
-          db,
-          "friendRequests"
-        ),
-
-        where(
-          "fromUid",
-          "==",
-          profileUid
-        ),
-
-        where(
-          "toUid",
-          "==",
-          currentUser.uid
-        ),
-
-        where(
-          "status",
-          "==",
-          "pending"
-        ),
-
-        limit(1)
-
+    const requestRef =
+      doc(
+        db,
+        "friendRequests",
+        requestId
       );
 
 
-    const snapshot =
-      await getDocs(
-        requestQuery
+    const requestSnap =
+      await getDoc(
+        requestRef
       );
 
 
     if (
-      snapshot.empty
+      !requestSnap.exists()
     ) {
 
       alert(
-        "This request is no longer available."
+        "This request no longer exists."
       );
 
-      await setupOtherProfile();
-
       return;
+
     }
 
 
-    const requestDoc =
-      snapshot.docs[0];
+    const request =
+      requestSnap.data();
 
 
-    // Create friendship
+    // Safety check
+    if (
+      request.toUid !==
+      currentUser.uid
+    ) {
+
+      alert(
+        "You cannot accept this request."
+      );
+
+      return;
+
+    }
+
+
     const friendshipId =
       createFriendshipId(
         currentUser.uid,
-        profileUid
+        request.fromUid
       );
 
 
+    // Create friendship
     await setDoc(
 
       doc(
@@ -732,7 +790,7 @@ async function acceptRequest() {
 
         users: [
           currentUser.uid,
-          profileUid
+          request.fromUid
         ],
 
         createdAt:
@@ -746,7 +804,7 @@ async function acceptRequest() {
     // Mark request accepted
     await updateDoc(
 
-      requestDoc.ref,
+      requestRef,
 
       {
 
@@ -761,15 +819,9 @@ async function acceptRequest() {
     );
 
 
-    alert(
-      "Friend request accepted!"
-    );
-
-
-    // Refresh buttons
-    updateButtons(
-      "friends"
-    );
+    updateRelationshipUI({
+      type: "friends"
+    });
 
 
   } catch (error) {
@@ -785,7 +837,7 @@ async function acceptRequest() {
 
 
     alert(
-      "Could not accept request."
+      "Could not accept the friend request."
     );
 
   }
@@ -794,7 +846,7 @@ async function acceptRequest() {
 
 
 // ========================================
-// CREATE FRIENDSHIP ID
+// FRIENDSHIP ID
 // ========================================
 
 function createFriendshipId(
@@ -858,6 +910,7 @@ async function shareProfile() {
 
   } catch (error) {
 
+    // User cancelled share.
     console.log(
       "Share cancelled."
     );
@@ -868,15 +921,40 @@ async function shareProfile() {
 
 
 // ========================================
+// BACK
+// ========================================
+
+backBtn.addEventListener(
+  "click",
+  () => {
+
+    if (
+      window.history.length > 1
+    ) {
+
+      history.back();
+
+    } else {
+
+      window.location.href =
+        "home.html";
+
+    }
+
+  }
+);
+
+
+// ========================================
 // ERROR
 // ========================================
 
 function showError(
-  text
+  message
 ) {
 
   profileError.textContent =
-    text;
+    message;
 
   profileError.classList.remove(
     "hidden"
@@ -895,9 +973,9 @@ function getInitials(
 
   return String(name)
 
-    .split(" ")
+    .trim()
 
-    .filter(Boolean)
+    .split(/\s+/)
 
     .slice(0, 2)
 
@@ -911,52 +989,3 @@ function getInitials(
     .join("");
 
 }
-
-
-// ========================================
-// ESCAPE ATTRIBUTE
-// ========================================
-
-function escapeAttribute(
-  value
-) {
-
-  return String(value)
-
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-
-    .replace(
-      /</g,
-      "&lt;"
-    )
-
-    .replace(
-      />/g,
-      "&gt;"
-    );
-
-}
-
-
-// ========================================
-// BACK BUTTON
-// ========================================
-
-document
-  .getElementById("backBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      history.back();
-
-    }
-  );
