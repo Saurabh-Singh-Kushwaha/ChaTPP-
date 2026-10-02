@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
   <meta charset="UTF-8">
@@ -9,34 +10,32 @@
     content="width=device-width, initial-scale=1.0"
   >
 
+  <meta
+    name="theme-color"
+    content="#6c63ff"
+  >
+
   <title>Profile</title>
 
-  <link rel="stylesheet" href="css/style.css">
+  <link
+    rel="stylesheet"
+    href="css/style.css"
+  >
 
 </head>
 
 <body>
 
-  <header class="topbar">
+  <main class="profile-page">
 
     <button
       id="backBtn"
       class="back-btn"
       type="button"
     >
-      ←
+      ← Back
     </button>
 
-    <div class="brand-small">
-      Profile
-    </div>
-
-    <div></div>
-
-  </header>
-
-
-  <main class="profile-page">
 
     <section
       id="profileCard"
@@ -45,9 +44,9 @@
 
       <div
         id="profileAvatar"
-        class="profile-avatar"
+        class="large-avatar"
       >
-        ?
+        👤
       </div>
 
 
@@ -56,10 +55,7 @@
       </h1>
 
 
-      <p
-        id="profileHandle"
-        class="profile-handle"
-      >
+      <p id="profileHandle">
       </p>
 
 
@@ -70,55 +66,26 @@
       </p>
 
 
-      <div class="profile-actions">
-
-        <button
-          id="chatBtn"
-          class="primary-btn"
-          type="button"
-        >
-          💬 Chat
-        </button>
-
-
-        <button
-          id="friendBtn"
-          class="secondary-btn"
-          type="button"
-        >
-          🤝 Add Friend
-        </button>
-
-
-        <button
-          id="shareBtn"
-          class="secondary-btn"
-          type="button"
-        >
-          🔗 Share Profile
-        </button>
-
+      <div
+        id="profileActions"
+        class="profile-actions"
+      >
       </div>
 
 
-      <section class="profile-media-section">
+      <section class="profile-content">
 
-        <h2>Shared Media</h2>
+        <h2>
+          Shared / Uploaded Media
+        </h2>
 
         <p class="muted">
-          Media sharing will appear here after chat is connected.
+          Media will appear here as the media system is added.
         </p>
 
       </section>
 
     </section>
-
-
-    <div
-      id="profileError"
-      class="error-box hidden"
-    >
-    </div>
 
   </main>
 
@@ -129,4 +96,5 @@
   ></script>
 
 </body>
+
 </html>
