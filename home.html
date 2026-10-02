@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
 
+<head>
   <meta charset="UTF-8">
 
   <meta
@@ -9,37 +9,49 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Connect</title>
+  <meta
+    name="theme-color"
+    content="#6c63ff"
+  >
+
+  <title>Home</title>
 
   <link rel="stylesheet" href="css/style.css">
-
 </head>
 
 <body>
 
-  <header class="topbar">
+  <header class="home-header">
 
-    <div class="brand-small">
-      Connect
+    <div>
+      <h1>Connect</h1>
+      <p class="muted">Find people you know</p>
     </div>
 
-
-    <div class="top-actions">
+    <div class="home-actions">
 
       <button
-        id="notificationBtn"
+        id="notificationsBtn"
         class="icon-btn"
         type="button"
+        aria-label="Notifications"
       >
         🔔
+        <span
+          id="requestBadge"
+          class="notification-badge hidden"
+        >
+          0
+        </span>
       </button>
 
       <button
-        id="logoutBtn"
-        class="icon-btn"
+        id="myProfileBtn"
+        class="profile-mini-btn"
         type="button"
+        aria-label="My Profile"
       >
-        ↪
+        👤
       </button>
 
     </div>
@@ -47,27 +59,16 @@
   </header>
 
 
-  <main class="home-page">
+  <main class="home-container">
 
-    <section class="welcome-section">
-
-      <h1 id="welcomeText">
-        People
-      </h1>
-
-      <p>
-        Find people using their name or handle.
-      </p>
-
-    </section>
-
+    <!-- SEARCH -->
 
     <div class="search-box">
 
-      <span>🔍</span>
+      <span>🔎</span>
 
       <input
-        id="searchInput"
+        id="userSearch"
         type="search"
         placeholder="Search name or @handle..."
         autocomplete="off"
@@ -76,57 +77,50 @@
     </div>
 
 
-    <section>
+    <!-- NOTIFICATIONS -->
 
-      <div
-        id="usersList"
-        class="users-list"
-      ></div>
+    <section
+      id="notificationsPanel"
+      class="notification-panel hidden"
+    >
 
-
-      <div
-        id="emptyState"
-        class="empty-state hidden"
-      >
-        No users found.
+      <div class="section-heading">
+        <h2>Friend Requests</h2>
       </div>
 
+      <div id="requestList">
+      </div>
 
-      <div
-        id="loadingState"
-        class="loading-state"
-      >
-        Loading users...
+    </section>
+
+
+    <!-- USERS -->
+
+    <section>
+
+      <div class="section-heading">
+
+        <h2>People</h2>
+
+      </div>
+
+      <div id="usersList">
+
+        <p class="muted">
+          Loading users...
+        </p>
+
       </div>
 
     </section>
 
   </main>
 
-<script type="module">
-  import { auth } from "./js/firebase.js";
-  import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
-  onAuthStateChanged(auth, (user) => {
-
-    if (!user) {
-      window.location.href = "index.html";
-      return;
-    }
-
-    const unlocked =
-      sessionStorage.getItem("privacyUnlocked");
-
-    if (unlocked !== user.uid) {
-      window.location.href = "privacy-lock.html";
-    }
-
-  });
-</script>
-  
   <script
     type="module"
     src="js/home.js"
   ></script>
+
 </body>
 </html>
