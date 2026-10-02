@@ -1,18 +1,18 @@
-import { auth, db } from "./firebase.js";
+// js/home.js
 
 import {
-  onAuthStateChanged
+  auth,
+  db
+} from "./firebase.js";
+
+import {
+  onAuthStateChanged,
+  signOut
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
 import {
   collection,
-  query,
-  where,
-  getDocs,
-  getDoc,
-  doc,
-  onSnapshot,
-  updateDoc
+  getDocs
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 
@@ -23,23 +23,23 @@ import {
 const usersList =
   document.getElementById("usersList");
 
-const userSearch =
-  document.getElementById("userSearch");
+const searchInput =
+  document.getElementById("searchInput");
 
-const myProfileBtn =
-  document.getElementById("myProfileBtn");
+const loadingState =
+  document.getElementById("loadingState");
 
-const notificationsBtn =
-  document.getElementById("notificationsBtn");
+const emptyState =
+  document.getElementById("emptyState");
 
-const notificationsPanel =
-  document.getElementById("notificationsPanel");
+const logoutBtn =
+  document.getElementById("logoutBtn");
 
-const requestList =
-  document.getElementById("requestList");
+const welcomeText =
+  document.getElementById("welcomeText");
 
-const requestBadge =
-  document.getElementById("requestBadge");
+const notificationBtn =
+  document.getElementById("notificationBtn");
 
 
 // ========================================
@@ -51,14 +51,14 @@ let allUsers = [];
 
 
 // ========================================
-// AUTH + PRIVACY LOCK CHECK
+// AUTH + PRIVACY LOCK
 // ========================================
 
 onAuthStateChanged(
   auth,
   async (user) => {
 
-    // User is not logged in
+    // Not logged in
     if (!user) {
 
       window.location.href =
@@ -68,14 +68,13 @@ onAuthStateChanged(
     }
 
 
-    // Check Privacy Lock
+    // Privacy Lock check
     const unlocked =
       sessionStorage.getItem(
         "privacyUnlocked"
       );
 
 
-    // Privacy lock is not unlocked
     if (unlocked !== user.uid) {
 
       window.location.href =
@@ -85,35 +84,61 @@ onAuthStateChanged(
     }
 
 
-    // Everything is okay
+    // User verified
     currentUser = user;
+
+
+    // Welcome text
+    if (welcomeText) {
+
+      welcomeText.textContent =
+        `Welcome, ${
+          user.displayName ||
+          "there"
+        }`;
+
+    }
 
 
     // Load users
     await loadUsers();
-
-
-    // Listen for incoming requests
-    listenForFriendRequests();
 
   }
 );
 
 
 // ========================================
-// LOAD REAL REGISTERED USERS
+// LOAD USERS
 // ========================================
 
 async function loadUsers() {
 
   try {
 
-    usersList.innerHTML = `
-      <p class="muted">
-        Loading users...
-      </p>
-    `;
+    if (loadingState) {
+      loadingState.classList.remove(
+        "hidden"
+      );
+    }
 
+
+    if (emptyState) {
+      emptyState.classList.add(
+        "hidden"
+      );
+    }
+
+
+    if (usersList) {
+
+      usersList.innerHTML = "";
+
+    }
+
+
+    // IMPORTANT:
+    // No orderBy() here.
+    // We sort locally instead.
 
     const snapshot =
       await getDocs(
@@ -130,27 +155,53 @@ async function loadUsers() {
     snapshot.forEach(
       (userDoc) => {
 
-        // Don't show yourself
+        const user =
+          userDoc.data();
+
+
+        // Don't show current user
         if (
           userDoc.id ===
           currentUser.uid
         ) {
+
           return;
+
         }
-
-
-        const data =
-          userDoc.data();
 
 
         allUsers.push({
 
-          id:
+          uid:
             userDoc.id,
 
-          ...data
+          ...user
 
         });
+
+      }
+    );
+
+
+    // Sort alphabetically
+    allUsers.sort(
+      (a, b) => {
+
+        const nameA =
+          (
+            a.displayName ||
+            ""
+          ).toLowerCase();
+
+        const nameB =
+          (
+            b.displayName ||
+            ""
+          ).toLowerCase();
+
+        return nameA.localeCompare(
+          nameB
+        );
 
       }
     );
@@ -163,19 +214,45 @@ async function loadUsers() {
 
   } catch (error) {
 
-  console.error(
-    "Load users error:",
-    error
-  );
+    console.error(
+      "FIRESTORE USERS ERROR:",
+      error
+    );
 
-  usersList.innerHTML = `
-    <p class="auth-message error">
-      Firestore error: ${escapeHTML(
-        error.code || error.message
-      )}
-    </p>
-  `;
-}
+
+    if (usersList) {
+
+      usersList.innerHTML = `
+
+        <div class="error-box">
+
+          <strong>
+            Could not load users.
+          </strong>
+
+          <br><br>
+
+          Please check your
+          Firebase connection
+          and Firestore rules.
+
+        </div>
+
+      `;
+
+    }
+
+  } finally {
+
+    if (loadingState) {
+
+      loadingState.classList.add(
+        "hidden"
+      );
+
+    }
+
+  }
 
 }
 
@@ -184,21 +261,39 @@ async function loadUsers() {
 // RENDER USERS
 // ========================================
 
-function renderUsers(users) {
+function renderUsers(
+  users
+) {
 
-  if (!users.length) {
-
-    usersList.innerHTML = `
-      <p class="muted">
-        No other users found.
-      </p>
-    `;
-
+  if (!usersList) {
     return;
   }
 
 
   usersList.innerHTML = "";
+
+
+  if (!users.length) {
+
+    if (emptyState) {
+
+      emptyState.classList.remove(
+        "hidden"
+      );
+
+    }
+
+    return;
+  }
+
+
+  if (emptyState) {
+
+    emptyState.classList.add(
+      "hidden"
+    );
+
+  }
 
 
   users.forEach(
@@ -210,79 +305,119 @@ function renderUsers(users) {
         );
 
 
-      card.type = "button";
-
       card.className =
         "user-card";
 
-
-      const photo =
-        user.photoURL ||
-        "";
+      card.type =
+        "button";
 
 
-      card.innerHTML = `
+      // ================================
+      // AVATAR
+      // ================================
 
-        <div class="user-avatar">
-
-          ${
-            photo
-
-              ? `
-                <img
-                  src="${escapeAttribute(
-                    photo
-                  )}"
-                  alt=""
-                >
-              `
-
-              : "👤"
-          }
-
-        </div>
+      const avatar =
+        document.createElement(
+          "div"
+        );
 
 
-        <div class="user-info">
-
-          <strong>
-            ${escapeHTML(
-              user.displayName ||
-              "User"
-            )}
-          </strong>
+      avatar.className =
+        "user-avatar";
 
 
-          <span>
-            ${
-              user.handle
-                ? "@"
-                + escapeHTML(
-                    user.handle
-                  )
-                : ""
-            }
-          </span>
+      if (user.photoURL) {
+
+        const image =
+          document.createElement(
+            "img"
+          );
 
 
-          ${
-            user.bio
+        image.src =
+          user.photoURL;
 
-              ? `
-                <small>
-                  ${escapeHTML(
-                    user.bio
-                  )}
-                </small>
-              `
+        image.alt =
+          "";
 
-              : ""
-          }
 
-        </div>
+        avatar.appendChild(
+          image
+        );
 
-      `;
+      } else {
 
+        avatar.textContent =
+          getInitials(
+            user.displayName ||
+            "User"
+          );
+
+      }
+
+
+      // ================================
+      // INFORMATION
+      // ================================
+
+      const information =
+        document.createElement(
+          "div"
+        );
+
+
+      information.className =
+        "user-information";
+
+
+      const name =
+        document.createElement(
+          "strong"
+        );
+
+
+      name.textContent =
+        user.displayName ||
+        "User";
+
+
+      const handle =
+        document.createElement(
+          "span"
+        );
+
+
+      handle.textContent =
+        user.handle
+          ? "@" + user.handle
+          : "";
+
+
+      information.appendChild(
+        name
+      );
+
+      information.appendChild(
+        handle
+      );
+
+
+      // ================================
+      // CARD
+      // ================================
+
+      card.appendChild(
+        avatar
+      );
+
+      card.appendChild(
+        information
+      );
+
+
+      // ================================
+      // OPEN PROFILE
+      // ================================
 
       card.addEventListener(
         "click",
@@ -291,7 +426,7 @@ function renderUsers(users) {
           window.location.href =
             `profile.html?uid=${
               encodeURIComponent(
-                user.id
+                user.uid
               )
             }`;
 
@@ -310,430 +445,162 @@ function renderUsers(users) {
 
 
 // ========================================
-// USER SEARCH
+// SEARCH
 // ========================================
 
-userSearch.addEventListener(
-  "input",
-  () => {
+if (searchInput) {
 
-    const search =
-      userSearch.value
-        .trim()
-        .toLowerCase()
-        .replace(/^@/, "");
+  searchInput.addEventListener(
+    "input",
+    () => {
 
-
-    // Empty search
-    if (!search) {
-
-      renderUsers(
-        allUsers
-      );
-
-      return;
-    }
-
-
-    const filtered =
-      allUsers.filter(
-        (user) => {
-
-          const name =
-            (
-              user.displayName ||
-              ""
-            )
-            .toLowerCase();
-
-
-          const handle =
-            (
-              user.handle ||
-              ""
-            )
-            .toLowerCase();
-
-
-          return (
-
-            name.includes(
-              search
-            )
-
-            ||
-
-            handle.includes(
-              search
-            )
-
+      const term =
+        searchInput.value
+          .trim()
+          .toLowerCase()
+          .replace(
+            /^@/,
+            ""
           );
 
-        }
-      );
 
+      // Empty search
+      if (!term) {
 
-    renderUsers(
-      filtered
-    );
-
-  }
-);
-
-
-// ========================================
-// MY PROFILE
-// ========================================
-
-myProfileBtn.addEventListener(
-  "click",
-  () => {
-
-    if (!currentUser) {
-      return;
-    }
-
-
-    window.location.href =
-      `profile.html?uid=${
-        encodeURIComponent(
-          currentUser.uid
-        )
-      }`;
-
-  }
-);
-
-
-// ========================================
-// NOTIFICATIONS BUTTON
-// ========================================
-
-notificationsBtn.addEventListener(
-  "click",
-  () => {
-
-    notificationsPanel.classList.toggle(
-      "hidden"
-    );
-
-  }
-);
-
-
-// ========================================
-// FRIEND REQUEST LISTENER
-// ========================================
-
-function listenForFriendRequests() {
-
-  const requestsQuery =
-    query(
-
-      collection(
-        db,
-        "friendRequests"
-      ),
-
-      where(
-        "toUid",
-        "==",
-        currentUser.uid
-      ),
-
-      where(
-        "status",
-        "==",
-        "pending"
-      )
-
-    );
-
-
-  onSnapshot(
-    requestsQuery,
-    async (snapshot) => {
-
-      // Number of requests
-      requestBadge.textContent =
-        snapshot.size;
-
-
-      // No requests
-      if (snapshot.empty) {
-
-        requestBadge.classList.add(
-          "hidden"
+        renderUsers(
+          allUsers
         );
-
-
-        requestList.innerHTML = `
-          <p class="muted">
-            No pending requests.
-          </p>
-        `;
 
         return;
       }
 
 
-      // Show notification badge
-      requestBadge.classList.remove(
-        "hidden"
+      const filtered =
+        allUsers.filter(
+          (user) => {
+
+            const name =
+              (
+                user.displayName ||
+                ""
+              ).toLowerCase();
+
+
+            const handle =
+              (
+                user.handle ||
+                ""
+              ).toLowerCase();
+
+
+            return (
+              name.includes(
+                term
+              ) ||
+              handle.includes(
+                term
+              )
+            );
+
+          }
+        );
+
+
+      renderUsers(
+        filtered
       );
 
+    }
+  );
 
-      requestList.innerHTML = "";
-
-
-      for (
-        const requestDoc
-        of snapshot.docs
-      ) {
-
-        const request =
-          requestDoc.data();
+}
 
 
-        // Get sender profile
-        const senderRef =
-          doc(
-            db,
-            "users",
-            request.fromUid
-          );
+// ========================================
+// LOGOUT
+// ========================================
+
+if (logoutBtn) {
+
+  logoutBtn.addEventListener(
+    "click",
+    async () => {
+
+      try {
+
+        // Remove privacy unlock
+        sessionStorage.removeItem(
+          "privacyUnlocked"
+        );
 
 
-        const senderSnap =
-          await getDoc(
-            senderRef
-          );
+        await signOut(
+          auth
+        );
 
 
-        if (!senderSnap.exists()) {
-          continue;
-        }
+        window.location.href =
+          "index.html";
 
 
-        const sender =
-          senderSnap.data();
+      } catch (error) {
+
+        console.error(
+          "Logout error:",
+          error
+        );
 
 
-        const item =
-          document.createElement(
-            "div"
-          );
-
-
-        item.className =
-          "friend-request";
-
-
-        item.innerHTML = `
-
-          <div class="request-user">
-
-            <strong>
-              ${escapeHTML(
-                sender.displayName ||
-                "User"
-              )}
-            </strong>
-
-
-            <span>
-              ${
-                sender.handle
-                  ? "@"
-                    +
-                    escapeHTML(
-                      sender.handle
-                    )
-                  : ""
-              }
-            </span>
-
-          </div>
-
-
-          <div class="request-actions">
-
-            <button
-              class="accept-request"
-              type="button"
-            >
-              Accept
-            </button>
-
-
-            <button
-              class="reject-request"
-              type="button"
-            >
-              Reject
-            </button>
-
-          </div>
-
-        `;
-
-
-        // Accept
-        item
-          .querySelector(
-            ".accept-request"
-          )
-          .addEventListener(
-            "click",
-            () => {
-
-              updateRequest(
-                requestDoc.id,
-                "accepted"
-              );
-
-            }
-          );
-
-
-        // Reject
-        item
-          .querySelector(
-            ".reject-request"
-          )
-          .addEventListener(
-            "click",
-            () => {
-
-              updateRequest(
-                requestDoc.id,
-                "rejected"
-              );
-
-            }
-          );
-
-
-        requestList.appendChild(
-          item
+        alert(
+          "Could not log out. Please try again."
         );
 
       }
 
-    },
+    }
+  );
 
-    (error) => {
+}
 
-      console.error(
-        "Friend request listener error:",
-        error
+
+// ========================================
+// NOTIFICATIONS
+// ========================================
+
+if (notificationBtn) {
+
+  notificationBtn.addEventListener(
+    "click",
+    () => {
+
+      alert(
+        "Friend requests will appear here."
       );
 
     }
-
   );
 
 }
 
 
 // ========================================
-// UPDATE FRIEND REQUEST
+// HELPERS
 // ========================================
 
-async function updateRequest(
-  requestId,
-  status
+function getInitials(
+  name
 ) {
 
-  try {
-
-    await updateDoc(
-
-      doc(
-        db,
-        "friendRequests",
-        requestId
-      ),
-
-      {
-
-        status:
-          status,
-
-        respondedAt:
-          new Date().toISOString()
-
-      }
-
-    );
-
-
-  } 
-  catch (error) {
-
-    console.error(
-      "Update request error:",
-      error
-    );
-
-
-    alert(
-      "Could not update friend request."
-    );
-
-  }
-
-}
-
-
-// ========================================
-// ESCAPE HTML
-// ========================================
-
-function escapeHTML(
-  value
-) {
-
-  return String(value)
-
-    .replaceAll(
-      "&",
-      "&amp;"
+  return String(name)
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(
+      word =>
+        word
+          .charAt(0)
+          .toUpperCase()
     )
-
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-
-}
-
-
-// ========================================
-// ESCAPE ATTRIBUTE
-// ========================================
-
-function escapeAttribute(
-  value
-) {
-
-  return escapeHTML(
-    value
-  );
+    .join("");
 
 }
