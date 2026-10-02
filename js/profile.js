@@ -10,15 +10,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
 import {
-  collection,
   doc,
   getDoc,
-  getDocs,
-  limit,
-  query,
   setDoc,
-  updateDoc,
-  where
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 
@@ -63,6 +58,26 @@ const profileMenuBtn =
     "profileMenuBtn"
   );
 
+const profileMenu =
+  document.getElementById(
+    "profileMenu"
+  );
+
+const copyProfileLinkBtn =
+  document.getElementById(
+    "copyProfileLinkBtn"
+  );
+
+const copyHandleBtn =
+  document.getElementById(
+    "copyHandleBtn"
+  );
+
+const closeMenuBtn =
+  document.getElementById(
+    "closeMenuBtn"
+  );
+
 
 // ========================================
 // PROFILE UID
@@ -78,7 +93,7 @@ const profileUid =
 
 
 // ========================================
-// VARIABLES
+// STATE
 // ========================================
 
 let currentUser = null;
@@ -110,6 +125,10 @@ if (!profileUid) {
       }
 
 
+      currentUser =
+        user;
+
+
       // Privacy lock
       const unlocked =
         sessionStorage.getItem(
@@ -118,8 +137,7 @@ if (!profileUid) {
 
 
       if (
-        unlocked !==
-        user.uid
+        unlocked !== user.uid
       ) {
 
         window.location.href =
@@ -127,10 +145,6 @@ if (!profileUid) {
 
         return;
       }
-
-
-      currentUser =
-        user;
 
 
       await loadProfile();
@@ -199,14 +213,24 @@ async function loadProfile() {
   } catch (error) {
 
     console.error(
-      "Profile error:",
+      "Profile loading error:",
       error
     );
 
 
-    showError(
-      "Could not load this profile."
-    );
+    /*
+      IMPORTANT:
+
+      Profile itself loaded successfully.
+      So relationship failure should not
+      destroy the whole profile page.
+    */
+
+    renderProfile();
+
+
+    relationshipStatus.textContent =
+      "Friend options are temporarily unavailable.";
 
   }
 
@@ -235,12 +259,13 @@ function renderProfile() {
     "No bio yet.";
 
 
+  profileAvatar.innerHTML =
+    "";
+
+
   if (
     viewedUser.photoURL
   ) {
-
-    profileAvatar.innerHTML = "";
-
 
     const img =
       document.createElement(
@@ -258,7 +283,6 @@ function renderProfile() {
     profileAvatar.appendChild(
       img
     );
-
 
   } else {
 
@@ -290,58 +314,59 @@ function setupOwnProfile() {
   relationshipStatus.textContent =
     "This is your profile.";
 
-
-  shareBtn.addEventListener(
-    "click",
-    shareProfile
-  );
-
-
-  profileMenuBtn.addEventListener(
-    "click",
-    () => {
-
-      alert(
-        "Profile settings will be added in the account settings phase."
-      );
-
-    }
-  );
-
 }
 
 
 // ========================================
-// OTHER PROFILE
+// OTHER USER
 // ========================================
 
 async function setupOtherProfile() {
 
-  const status =
-    await getRelationshipStatus();
+  try {
+
+    const status =
+      await getRelationshipStatus();
 
 
-  updateRelationshipUI(
-    status
-  );
+    updateRelationshipUI(
+      status
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Relationship check error:",
+      error
+    );
 
 
-  shareBtn.addEventListener(
-    "click",
-    shareProfile
-  );
+    /*
+      Never show the profile error
+      just because relationship lookup
+      failed.
+    */
+
+    friendBtn.style.display =
+      "block";
 
 
-  profileMenuBtn.addEventListener(
-    "click",
-    () => {
+    friendBtn.disabled =
+      false;
 
-      alert(
-        "More profile options will be added later."
-      );
 
-    }
-  );
+    friendBtn.textContent =
+      "🤝 Add Friend";
+
+
+    friendBtn.onclick =
+      sendFriendRequest;
+
+
+    relationshipStatus.textContent =
+      "Add this person as a friend to start chatting.";
+
+  }
 
 }
 
@@ -351,6 +376,11 @@ async function setupOtherProfile() {
 // ========================================
 
 async function getRelationshipStatus() {
+
+  /*
+    Friendship ID is always generated
+    from both UIDs in sorted order.
+  */
 
   const friendshipId =
     createFriendshipId(
@@ -384,112 +414,108 @@ async function getRelationshipStatus() {
   }
 
 
-  // Request sent
-  const sentQuery =
-    query(
+  /*
+    Request sent by current user
+  */
 
-      collection(
-        db,
-        "friendRequests"
-      ),
-
-      where(
-        "fromUid",
-        "==",
-        currentUser.uid
-      ),
-
-      where(
-        "toUid",
-        "==",
-        profileUid
-      ),
-
-      where(
-        "status",
-        "==",
-        "pending"
-      ),
-
-      limit(1)
-
+  const sentRequestId =
+    createRequestId(
+      currentUser.uid,
+      profileUid
     );
 
 
-  const sentSnap =
-    await getDocs(
-      sentQuery
+  const sentRequestRef =
+    doc(
+      db,
+      "friendRequests",
+      sentRequestId
+    );
+
+
+  const sentRequestSnap =
+    await getDoc(
+      sentRequestRef
     );
 
 
   if (
-    !sentSnap.empty
+    sentRequestSnap.exists()
   ) {
 
-    return {
+    const data =
+      sentRequestSnap.data();
 
-      type:
-        "sent",
 
-      requestId:
-        sentSnap.docs[0].id
+    if (
+      data.status ===
+      "pending"
+    ) {
 
-    };
+      return {
+
+        type:
+          "sent",
+
+        requestId:
+          sentRequestId
+
+      };
+
+    }
 
   }
 
 
-  // Request received
-  const receivedQuery =
-    query(
+  /*
+    Request received from viewed user
+  */
 
-      collection(
-        db,
-        "friendRequests"
-      ),
-
-      where(
-        "fromUid",
-        "==",
-        profileUid
-      ),
-
-      where(
-        "toUid",
-        "==",
-        currentUser.uid
-      ),
-
-      where(
-        "status",
-        "==",
-        "pending"
-      ),
-
-      limit(1)
-
+  const receivedRequestId =
+    createRequestId(
+      profileUid,
+      currentUser.uid
     );
 
 
-  const receivedSnap =
-    await getDocs(
-      receivedQuery
+  const receivedRequestRef =
+    doc(
+      db,
+      "friendRequests",
+      receivedRequestId
+    );
+
+
+  const receivedRequestSnap =
+    await getDoc(
+      receivedRequestRef
     );
 
 
   if (
-    !receivedSnap.empty
+    receivedRequestSnap.exists()
   ) {
 
-    return {
+    const data =
+      receivedRequestSnap.data();
 
-      type:
-        "received",
 
-      requestId:
-        receivedSnap.docs[0].id
+    if (
+      data.status ===
+      "pending"
+    ) {
 
-    };
+      return {
+
+        type:
+          "received",
+
+        requestId:
+          receivedRequestId
+
+      };
+
+    }
 
   }
 
@@ -502,7 +528,7 @@ async function getRelationshipStatus() {
 
 
 // ========================================
-// UPDATE RELATIONSHIP UI
+// UPDATE UI
 // ========================================
 
 function updateRelationshipUI(
@@ -513,6 +539,10 @@ function updateRelationshipUI(
     "none";
 
 
+  friendBtn.style.display =
+    "block";
+
+
   friendBtn.disabled =
     false;
 
@@ -521,10 +551,7 @@ function updateRelationshipUI(
     null;
 
 
-  // ------------------------------
   // FRIENDS
-  // ------------------------------
-
   if (
     relationship.type ===
     "friends"
@@ -563,10 +590,7 @@ function updateRelationshipUI(
   }
 
 
-  // ------------------------------
   // REQUEST SENT
-  // ------------------------------
-
   if (
     relationship.type ===
     "sent"
@@ -583,15 +607,11 @@ function updateRelationshipUI(
     relationshipStatus.textContent =
       "Waiting for this user to accept your request.";
 
-
     return;
   }
 
 
-  // ------------------------------
   // REQUEST RECEIVED
-  // ------------------------------
-
   if (
     relationship.type ===
     "received"
@@ -614,15 +634,11 @@ function updateRelationshipUI(
     relationshipStatus.textContent =
       "This user has sent you a friend request.";
 
-
     return;
   }
 
 
-  // ------------------------------
   // NO CONNECTION
-  // ------------------------------
-
   friendBtn.textContent =
     "🤝 Add Friend";
 
@@ -638,7 +654,7 @@ function updateRelationshipUI(
 
 
 // ========================================
-// SEND REQUEST
+// SEND FRIEND REQUEST
 // ========================================
 
 async function sendFriendRequest() {
@@ -650,7 +666,10 @@ async function sendFriendRequest() {
 
 
     const requestId =
-      `${currentUser.uid}_${profileUid}`;
+      createRequestId(
+        currentUser.uid,
+        profileUid
+      );
 
 
     const requestRef =
@@ -688,11 +707,10 @@ async function sendFriendRequest() {
     relationshipStatus.textContent =
       "Friend request sent. Waiting for acceptance.";
 
-
   } catch (error) {
 
     console.error(
-      "Friend request error:",
+      "Send friend request error:",
       error
     );
 
@@ -743,11 +761,12 @@ async function acceptRequest(
     ) {
 
       alert(
-        "This request no longer exists."
+        "This request is no longer available."
       );
 
-      return;
+      await setupOtherProfile();
 
+      return;
     }
 
 
@@ -755,7 +774,6 @@ async function acceptRequest(
       requestSnap.data();
 
 
-    // Safety check
     if (
       request.toUid !==
       currentUser.uid
@@ -766,7 +784,6 @@ async function acceptRequest(
       );
 
       return;
-
     }
 
 
@@ -777,7 +794,6 @@ async function acceptRequest(
       );
 
 
-    // Create friendship
     await setDoc(
 
       doc(
@@ -801,7 +817,6 @@ async function acceptRequest(
     );
 
 
-    // Mark request accepted
     await updateDoc(
 
       requestRef,
@@ -837,7 +852,7 @@ async function acceptRequest(
 
 
     alert(
-      "Could not accept the friend request."
+      "Could not accept this request."
     );
 
   }
@@ -846,8 +861,18 @@ async function acceptRequest(
 
 
 // ========================================
-// FRIENDSHIP ID
+// IDs
 // ========================================
+
+function createRequestId(
+  fromUid,
+  toUid
+) {
+
+  return `${fromUid}_${toUid}`;
+
+}
+
 
 function createFriendshipId(
   uid1,
@@ -886,9 +911,7 @@ async function shareProfile() {
           profileName.textContent,
 
         text:
-          `Check out ${
-            profileHandle.textContent
-          }`,
+          `Check out ${profileHandle.textContent}`,
 
         url:
           url
@@ -910,7 +933,6 @@ async function shareProfile() {
 
   } catch (error) {
 
-    // User cancelled share.
     console.log(
       "Share cancelled."
     );
@@ -918,6 +940,144 @@ async function shareProfile() {
   }
 
 }
+
+
+// ========================================
+// THREE DOT MENU
+// ========================================
+
+profileMenuBtn.addEventListener(
+  "click",
+  (event) => {
+
+    event.stopPropagation();
+
+
+    const isOpen =
+      profileMenu.classList.contains(
+        "show"
+      );
+
+
+    profileMenu.classList.toggle(
+      "show"
+    );
+
+
+    profileMenuBtn.setAttribute(
+      "aria-expanded",
+      String(!isOpen)
+    );
+
+  }
+);
+
+
+// Copy profile link
+copyProfileLinkBtn.addEventListener(
+  "click",
+  async () => {
+
+    try {
+
+      await navigator.clipboard.writeText(
+        window.location.href
+      );
+
+
+      closeProfileMenu();
+
+
+      alert(
+        "Profile link copied."
+      );
+
+    } catch (error) {
+
+      alert(
+        "Could not copy profile link."
+      );
+
+    }
+
+  }
+);
+
+
+// Copy handle
+copyHandleBtn.addEventListener(
+  "click",
+  async () => {
+
+    try {
+
+      const handle =
+        profileHandle.textContent;
+
+
+      await navigator.clipboard.writeText(
+        handle
+      );
+
+
+      closeProfileMenu();
+
+
+      alert(
+        "Handle copied."
+      );
+
+    } catch (error) {
+
+      alert(
+        "Could not copy handle."
+      );
+
+    }
+
+  }
+);
+
+
+// Close menu
+closeMenuBtn.addEventListener(
+  "click",
+  closeProfileMenu
+);
+
+
+function closeProfileMenu() {
+
+  profileMenu.classList.remove(
+    "show"
+  );
+
+
+  profileMenuBtn.setAttribute(
+    "aria-expanded",
+    "false"
+  );
+
+}
+
+
+// Click outside menu
+document.addEventListener(
+  "click",
+  (event) => {
+
+    if (
+      !event.target.closest(
+        ".profile-menu-wrapper"
+      )
+    ) {
+
+      closeProfileMenu();
+
+    }
+
+  }
+);
 
 
 // ========================================
@@ -956,6 +1116,7 @@ function showError(
   profileError.textContent =
     message;
 
+
   profileError.classList.remove(
     "hidden"
   );
@@ -972,20 +1133,15 @@ function getInitials(
 ) {
 
   return String(name)
-
     .trim()
-
     .split(/\s+/)
-
     .slice(0, 2)
-
     .map(
       word =>
         word
           .charAt(0)
           .toUpperCase()
     )
-
     .join("");
 
 }
