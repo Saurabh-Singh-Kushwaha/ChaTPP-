@@ -11,52 +11,46 @@ import {
   doc,
   getDoc,
   setDoc,
-  query,
-  collection,
-  where,
+  updateDoc,
   getDocs,
+  collection,
+  query,
+  where,
   limit
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 
+// ========================================
+// ELEMENTS
+// ========================================
+
 const profileName =
-  document.getElementById(
-    "profileName"
-  );
+  document.getElementById("profileName");
 
 const profileHandle =
-  document.getElementById(
-    "profileHandle"
-  );
+  document.getElementById("profileHandle");
 
 const profileBio =
-  document.getElementById(
-    "profileBio"
-  );
+  document.getElementById("profileBio");
 
 const profileAvatar =
-  document.getElementById(
-    "profileAvatar"
-  );
+  document.getElementById("profileAvatar");
 
-const profileActions =
-  document.getElementById(
-    "profileActions"
-  );
+const profileError =
+  document.getElementById("profileError");
 
-const backBtn =
-  document.getElementById(
-    "backBtn"
-  );
+const chatBtn =
+  document.getElementById("chatBtn");
 
+const friendBtn =
+  document.getElementById("friendBtn");
 
-let currentUser = null;
-let viewedUid = null;
-let viewedUser = null;
+const shareBtn =
+  document.getElementById("shareBtn");
 
 
 // ========================================
-// GET UID
+// PROFILE UID
 // ========================================
 
 const params =
@@ -64,72 +58,61 @@ const params =
     window.location.search
   );
 
-
-viewedUid =
+const profileUid =
   params.get("uid");
 
-
-// ========================================
-// BACK
-// ========================================
-
-backBtn.addEventListener(
-  "click",
-  () => {
-
-    window.history.back();
-
-  }
-);
+let currentUser = null;
+let viewedUser = null;
 
 
 // ========================================
-// AUTH
+// AUTH + PRIVACY LOCK
 // ========================================
 
-onAuthStateChanged(
-  auth,
-  async (user) => {
+if (!profileUid) {
 
-    if (!user) {
+  showError(
+    "No user profile was specified."
+  );
 
-      window.location.href =
-        "index.html";
+} else {
 
-      return;
-    }
+  onAuthStateChanged(
+    auth,
+    async (user) => {
 
+      if (!user) {
 
-    const unlocked =
-      sessionStorage.getItem(
-        "privacyUnlocked"
-      );
+        window.location.href =
+          "index.html";
 
-
-    if (unlocked !== user.uid) {
-
-      window.location.href =
-        "privacy-lock.html";
-
-      return;
-    }
+        return;
+      }
 
 
-    currentUser = user;
+      const unlocked =
+        sessionStorage.getItem(
+          "privacyUnlocked"
+        );
 
 
-    if (!viewedUid) {
+      if (unlocked !== user.uid) {
 
-      viewedUid =
-        currentUser.uid;
+        window.location.href =
+          "privacy-lock.html";
+
+        return;
+      }
+
+
+      currentUser = user;
+
+      await loadProfile();
 
     }
+  );
 
-
-    await loadProfile();
-
-  }
-);
+}
 
 
 // ========================================
@@ -144,7 +127,7 @@ async function loadProfile() {
       doc(
         db,
         "users",
-        viewedUid
+        profileUid
       );
 
 
@@ -156,11 +139,9 @@ async function loadProfile() {
 
     if (!snapshot.exists()) {
 
-      profileName.textContent =
-        "User not found";
-
-      profileActions.innerHTML =
-        "";
+      showError(
+        "This user profile does not exist."
+      );
 
       return;
     }
@@ -173,26 +154,33 @@ async function loadProfile() {
     renderProfile();
 
 
+    // Own profile
     if (
-      viewedUid ===
+      profileUid ===
       currentUser.uid
     ) {
 
-      renderOwnProfileActions();
+      setupOwnProfile();
 
-    } else {
-
-      await renderOtherProfileActions();
-
+      return;
     }
+
+
+    // Other user's profile
+    await setupOtherProfile();
 
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Profile loading error:",
+      error
+    );
 
-    profileName.textContent =
-      "Could not load profile.";
+
+    showError(
+      "Could not load this profile."
+    );
 
   }
 
@@ -212,29 +200,37 @@ function renderProfile() {
 
   profileHandle.textContent =
     viewedUser.handle
-      ? `@${viewedUser.handle}`
+      ? "@" + viewedUser.handle
       : "";
 
 
   profileBio.textContent =
     viewedUser.bio ||
-    "";
+    "No bio yet.";
 
 
-  if (viewedUser.photoURL) {
+  if (
+    viewedUser.photoURL
+  ) {
 
-    profileAvatar.innerHTML =
-      `<img
+    profileAvatar.innerHTML = `
+
+      <img
         src="${escapeAttribute(
           viewedUser.photoURL
         )}"
-        alt=""
-      >`;
+        alt="Profile picture"
+      >
+
+    `;
 
   } else {
 
     profileAvatar.textContent =
-      "👤";
+      getInitials(
+        viewedUser.displayName ||
+        "User"
+      );
 
   }
 
@@ -245,57 +241,20 @@ function renderProfile() {
 // OWN PROFILE
 // ========================================
 
-function renderOwnProfileActions() {
+function setupOwnProfile() {
 
-  profileActions.innerHTML = `
+  friendBtn.style.display =
+    "none";
 
-    <button
-      id="editProfileBtn"
-      class="primary-btn"
-      type="button"
-    >
-      Edit Profile
-    </button>
-
-    <button
-      id="settingsBtn"
-      class="secondary-btn"
-      type="button"
-    >
-      Settings
-    </button>
-
-  `;
+  chatBtn.style.display =
+    "none";
 
 
-  document
-    .getElementById(
-      "editProfileBtn"
-    )
-    .addEventListener(
-      "click",
-      () => {
+  shareBtn.addEventListener(
+    "click",
+    shareProfile
+  );
 
-        window.location.href =
-          "edit-profile.html";
-
-      }
-    );
-
-
-  document
-    .getElementById(
-      "settingsBtn"
-    )
-    .addEventListener(
-      "click",
-      () => {
-
-        window.location.href =
-          "settings.html";
-
-      }
-    );
 
 }
 
@@ -304,277 +263,161 @@ function renderOwnProfileActions() {
 // OTHER PROFILE
 // ========================================
 
-async function renderOtherProfileActions() {
+async function setupOtherProfile() {
 
-  const friendship =
-    await getFriendshipStatus(
-      currentUser.uid,
-      viewedUid
-    );
+  const status =
+    await getFriendshipStatus();
 
 
-  if (
-    friendship ===
-    "friends"
-  ) {
-
-    profileActions.innerHTML = `
-
-      <button
-        id="chatBtn"
-        class="primary-btn"
-        type="button"
-      >
-        💬 Chat
-      </button>
-
-      <button
-        id="shareProfileBtn"
-        class="secondary-btn"
-        type="button"
-      >
-        Share Profile
-      </button>
-
-    `;
+  updateButtons(
+    status
+  );
 
 
-    document
-      .getElementById(
-        "chatBtn"
-      )
-      .addEventListener(
-        "click",
-        () => {
-
-          window.location.href =
-            `chat.html?uid=${encodeURIComponent(
-              viewedUid
-            )}`;
-
-        }
-      );
-
-
-  } else if (
-    friendship ===
-    "request_sent"
-  ) {
-
-    profileActions.innerHTML = `
-
-      <button
-        class="secondary-btn"
-        type="button"
-        disabled
-      >
-        Request Sent
-      </button>
-
-      <button
-        id="shareProfileBtn"
-        class="secondary-btn"
-        type="button"
-      >
-        Share Profile
-      </button>
-
-    `;
-
-
-  } else if (
-    friendship ===
-    "request_received"
-  ) {
-
-    profileActions.innerHTML = `
-
-      <button
-        id="acceptBtn"
-        class="primary-btn"
-        type="button"
-      >
-        Accept Request
-      </button>
-
-      <button
-        id="shareProfileBtn"
-        class="secondary-btn"
-        type="button"
-      >
-        Share Profile
-      </button>
-
-    `;
-
-
-    document
-      .getElementById(
-        "acceptBtn"
-      )
-      .addEventListener(
-        "click",
-        acceptIncomingRequest
-      );
-
-
-  } else {
-
-    profileActions.innerHTML = `
-
-      <button
-        id="addFriendBtn"
-        class="primary-btn"
-        type="button"
-      >
-        Add Friend
-      </button>
-
-      <button
-        id="shareProfileBtn"
-        class="secondary-btn"
-        type="button"
-      >
-        Share Profile
-      </button>
-
-    `;
-
-
-    document
-      .getElementById(
-        "addFriendBtn"
-      )
-      .addEventListener(
-        "click",
-        sendFriendRequest
-      );
-
-  }
-
-
-  const shareBtn =
-    document.getElementById(
-      "shareProfileBtn"
-    );
-
-
-  if (shareBtn) {
-
-    shareBtn.addEventListener(
-      "click",
-      shareProfile
-    );
-
-  }
+  shareBtn.addEventListener(
+    "click",
+    shareProfile
+  );
 
 }
 
 
 // ========================================
-// FRIENDSHIP STATUS
+// GET FRIENDSHIP STATUS
 // ========================================
 
-async function getFriendshipStatus(
-  uid1,
-  uid2
-) {
+async function getFriendshipStatus() {
 
-  const firstId =
-    `${uid1}_${uid2}`;
+  // ----------------------------
+  // Check existing friendship
+  // ----------------------------
 
-  const secondId =
-    `${uid2}_${uid1}`;
+  const friendshipId =
+    createFriendshipId(
+      currentUser.uid,
+      profileUid
+    );
 
 
-  const friendRef =
+  const friendshipRef =
     doc(
       db,
       "friendships",
-      getFriendshipId(
-        uid1,
-        uid2
-      )
+      friendshipId
     );
 
 
-  const friendSnap =
+  const friendshipSnap =
     await getDoc(
-      friendRef
+      friendshipRef
     );
 
 
-  if (friendSnap.exists()) {
+  if (
+    friendshipSnap.exists()
+  ) {
 
     return "friends";
 
   }
 
 
-  const sentSnap =
-    await getDocs(
-      query(
-        collection(
-          db,
-          "friendRequests"
-        ),
-        where(
-          "fromUid",
-          "==",
-          uid1
-        ),
-        where(
-          "toUid",
-          "==",
-          uid2
-        ),
-        where(
-          "status",
-          "==",
-          "pending"
-        ),
-        limit(1)
-      )
+  // ----------------------------
+  // Request sent by me
+  // ----------------------------
+
+  const sentQuery =
+    query(
+
+      collection(
+        db,
+        "friendRequests"
+      ),
+
+      where(
+        "fromUid",
+        "==",
+        currentUser.uid
+      ),
+
+      where(
+        "toUid",
+        "==",
+        profileUid
+      ),
+
+      where(
+        "status",
+        "==",
+        "pending"
+      ),
+
+      limit(1)
+
     );
 
 
-  if (!sentSnap.empty) {
+  const sentSnapshot =
+    await getDocs(
+      sentQuery
+    );
 
-    return "request_sent";
+
+  if (
+    !sentSnapshot.empty
+  ) {
+
+    return "sent";
 
   }
 
 
-  const receivedSnap =
-    await getDocs(
-      query(
-        collection(
-          db,
-          "friendRequests"
-        ),
-        where(
-          "fromUid",
-          "==",
-          uid2
-        ),
-        where(
-          "toUid",
-          "==",
-          uid1
-        ),
-        where(
-          "status",
-          "==",
-          "pending"
-        ),
-        limit(1)
-      )
+  // ----------------------------
+  // Request received
+  // ----------------------------
+
+  const receivedQuery =
+    query(
+
+      collection(
+        db,
+        "friendRequests"
+      ),
+
+      where(
+        "fromUid",
+        "==",
+        profileUid
+      ),
+
+      where(
+        "toUid",
+        "==",
+        currentUser.uid
+      ),
+
+      where(
+        "status",
+        "==",
+        "pending"
+      ),
+
+      limit(1)
+
     );
 
 
-  if (!receivedSnap.empty) {
+  const receivedSnapshot =
+    await getDocs(
+      receivedQuery
+    );
 
-    return "request_received";
+
+  if (
+    !receivedSnapshot.empty
+  ) {
+
+    return "received";
 
   }
 
@@ -585,30 +428,181 @@ async function getFriendshipStatus(
 
 
 // ========================================
-// SEND REQUEST
+// UPDATE BUTTONS
+// ========================================
+
+function updateButtons(
+  status
+) {
+
+  // ----------------------------
+  // Friends
+  // ----------------------------
+
+  if (
+    status === "friends"
+  ) {
+
+    friendBtn.textContent =
+      "✓ Friends";
+
+    friendBtn.disabled =
+      true;
+
+    friendBtn.classList.add(
+      "disabled"
+    );
+
+
+    chatBtn.style.display =
+      "block";
+
+
+    chatBtn.onclick =
+      () => {
+
+        window.location.href =
+          `chat.html?uid=${
+            encodeURIComponent(
+              profileUid
+            )
+          }`;
+
+      };
+
+
+    return;
+  }
+
+
+  // ----------------------------
+  // Request sent
+  // ----------------------------
+
+  if (
+    status === "sent"
+  ) {
+
+    friendBtn.textContent =
+      "Request Sent";
+
+    friendBtn.disabled =
+      true;
+
+    friendBtn.classList.add(
+      "disabled"
+    );
+
+
+    chatBtn.style.display =
+      "none";
+
+
+    return;
+  }
+
+
+  // ----------------------------
+  // Request received
+  // ----------------------------
+
+  if (
+    status === "received"
+  ) {
+
+    friendBtn.textContent =
+      "Accept Request";
+
+    friendBtn.disabled =
+      false;
+
+
+    friendBtn.onclick =
+      acceptRequest;
+
+
+    chatBtn.style.display =
+      "none";
+
+
+    return;
+  }
+
+
+  // ----------------------------
+  // No relationship
+  // ----------------------------
+
+  friendBtn.textContent =
+    "🤝 Add Friend";
+
+  friendBtn.disabled =
+    false;
+
+
+  friendBtn.onclick =
+    sendFriendRequest;
+
+
+  chatBtn.style.display =
+    "none";
+
+}
+
+
+// ========================================
+// SEND FRIEND REQUEST
 // ========================================
 
 async function sendFriendRequest() {
 
-  const requestId =
-    `${currentUser.uid}_${viewedUid}`;
+  if (
+    !currentUser ||
+    !profileUid
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    currentUser.uid ===
+    profileUid
+  ) {
+
+    return;
+
+  }
 
 
   try {
 
-    await setDoc(
+    friendBtn.disabled =
+      true;
+
+
+    const requestId =
+      `${currentUser.uid}_${profileUid}`;
+
+
+    const requestRef =
       doc(
         db,
         "friendRequests",
         requestId
-      ),
+      );
+
+
+    await setDoc(
+      requestRef,
       {
 
         fromUid:
           currentUser.uid,
 
         toUid:
-          viewedUid,
+          profileUid,
 
         status:
           "pending",
@@ -620,20 +614,29 @@ async function sendFriendRequest() {
     );
 
 
+    friendBtn.textContent =
+      "Request Sent";
+
+
     alert(
       "Friend request sent!"
     );
 
 
-    await renderOtherProfileActions();
-
-
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Send request error:",
+      error
+    );
+
+
+    friendBtn.disabled =
+      false;
+
 
     alert(
-      "Could not send request."
+      "Could not send friend request."
     );
 
   }
@@ -645,32 +648,43 @@ async function sendFriendRequest() {
 // ACCEPT REQUEST
 // ========================================
 
-async function acceptIncomingRequest() {
+async function acceptRequest() {
 
   try {
 
+    friendBtn.disabled =
+      true;
+
+
+    // Find pending request
     const requestQuery =
       query(
+
         collection(
           db,
           "friendRequests"
         ),
+
         where(
           "fromUid",
           "==",
-          viewedUid
+          profileUid
         ),
+
         where(
           "toUid",
           "==",
           currentUser.uid
         ),
+
         where(
           "status",
           "==",
           "pending"
         ),
+
         limit(1)
+
       );
 
 
@@ -680,14 +694,17 @@ async function acceptIncomingRequest() {
       );
 
 
-    if (snapshot.empty) {
+    if (
+      snapshot.empty
+    ) {
 
       alert(
-        "Request no longer exists."
+        "This request is no longer available."
       );
 
-      return;
+      await setupOtherProfile();
 
+      return;
     }
 
 
@@ -695,31 +712,42 @@ async function acceptIncomingRequest() {
       snapshot.docs[0];
 
 
+    // Create friendship
+    const friendshipId =
+      createFriendshipId(
+        currentUser.uid,
+        profileUid
+      );
+
+
     await setDoc(
+
       doc(
         db,
         "friendships",
-        getFriendshipId(
-          currentUser.uid,
-          viewedUid
-        )
+        friendshipId
       ),
+
       {
 
         users: [
           currentUser.uid,
-          viewedUid
+          profileUid
         ],
 
         createdAt:
           new Date().toISOString()
 
       }
+
     );
 
 
-    await setDoc(
+    // Mark request accepted
+    await updateDoc(
+
       requestDoc.ref,
+
       {
 
         status:
@@ -728,19 +756,33 @@ async function acceptIncomingRequest() {
         respondedAt:
           new Date().toISOString()
 
-      },
-      {
-        merge: true
       }
+
     );
 
 
-    await renderOtherProfileActions();
+    alert(
+      "Friend request accepted!"
+    );
+
+
+    // Refresh buttons
+    updateButtons(
+      "friends"
+    );
 
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "Accept request error:",
+      error
+    );
+
+
+    friendBtn.disabled =
+      false;
+
 
     alert(
       "Could not accept request."
@@ -752,15 +794,18 @@ async function acceptIncomingRequest() {
 
 
 // ========================================
-// FRIENDSHIP ID
+// CREATE FRIENDSHIP ID
 // ========================================
 
-function getFriendshipId(
+function createFriendshipId(
   uid1,
   uid2
 ) {
 
-  return [uid1, uid2]
+  return [
+    uid1,
+    uid2
+  ]
     .sort()
     .join("_");
 
@@ -773,10 +818,8 @@ function getFriendshipId(
 
 async function shareProfile() {
 
-  const profileUrl =
-    `${window.location.origin}/profile.html?uid=${encodeURIComponent(
-      viewedUid
-    )}`;
+  const url =
+    window.location.href;
 
 
   try {
@@ -788,24 +831,27 @@ async function shareProfile() {
       await navigator.share({
 
         title:
-          viewedUser.displayName,
+          profileName.textContent,
 
         text:
-          `Check out @${viewedUser.handle}`,
+          `Check out ${
+            profileHandle.textContent
+          }`,
 
         url:
-          profileUrl
+          url
 
       });
 
     } else {
 
       await navigator.clipboard.writeText(
-        profileUrl
+        url
       );
 
+
       alert(
-        "Profile link copied!"
+        "Profile link copied."
       );
 
     }
@@ -822,23 +868,95 @@ async function shareProfile() {
 
 
 // ========================================
-// ESCAPE
+// ERROR
 // ========================================
 
-function escapeHTML(value) {
+function showError(
+  text
+) {
+
+  profileError.textContent =
+    text;
+
+  profileError.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+// ========================================
+// INITIALS
+// ========================================
+
+function getInitials(
+  name
+) {
+
+  return String(name)
+
+    .split(" ")
+
+    .filter(Boolean)
+
+    .slice(0, 2)
+
+    .map(
+      word =>
+        word
+          .charAt(0)
+          .toUpperCase()
+    )
+
+    .join("");
+
+}
+
+
+// ========================================
+// ESCAPE ATTRIBUTE
+// ========================================
+
+function escapeAttribute(
+  value
+) {
 
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+
+    .replace(
+      /</g,
+      "&lt;"
+    )
+
+    .replace(
+      />/g,
+      "&gt;"
+    );
 
 }
 
 
-function escapeAttribute(value) {
+// ========================================
+// BACK BUTTON
+// ========================================
 
-  return escapeHTML(value);
+document
+  .getElementById("backBtn")
+  .addEventListener(
+    "click",
+    () => {
 
-}
+      history.back();
+
+    }
+  );
