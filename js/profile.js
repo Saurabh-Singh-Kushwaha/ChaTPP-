@@ -1,5 +1,3 @@
-// js/profile.js
-
 import {
   auth,
   db
@@ -11,34 +9,55 @@ import {
 
 import {
   doc,
-  getDoc
+  getDoc,
+  setDoc,
+  query,
+  collection,
+  where,
+  getDocs,
+  limit
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 
 const profileName =
-  document.getElementById("profileName");
+  document.getElementById(
+    "profileName"
+  );
 
 const profileHandle =
-  document.getElementById("profileHandle");
+  document.getElementById(
+    "profileHandle"
+  );
 
 const profileBio =
-  document.getElementById("profileBio");
+  document.getElementById(
+    "profileBio"
+  );
 
 const profileAvatar =
-  document.getElementById("profileAvatar");
+  document.getElementById(
+    "profileAvatar"
+  );
 
-const profileError =
-  document.getElementById("profileError");
+const profileActions =
+  document.getElementById(
+    "profileActions"
+  );
 
-const chatBtn =
-  document.getElementById("chatBtn");
+const backBtn =
+  document.getElementById(
+    "backBtn"
+  );
 
-const friendBtn =
-  document.getElementById("friendBtn");
 
-const shareBtn =
-  document.getElementById("shareBtn");
+let currentUser = null;
+let viewedUid = null;
+let viewedUser = null;
 
+
+// ========================================
+// GET UID
+// ========================================
 
 const params =
   new URLSearchParams(
@@ -46,43 +65,76 @@ const params =
   );
 
 
-const profileUid =
+viewedUid =
   params.get("uid");
 
 
-if (!profileUid) {
+// ========================================
+// BACK
+// ========================================
 
-  showError(
-    "No user profile was specified."
-  );
+backBtn.addEventListener(
+  "click",
+  () => {
 
-} else {
+    window.history.back();
 
-  onAuthStateChanged(
-    auth,
-    async (user) => {
-
-      if (!user) {
-
-        window.location.href =
-          "index.html";
-
-        return;
-
-      }
+  }
+);
 
 
-      await loadProfile();
+// ========================================
+// AUTH
+// ========================================
+
+onAuthStateChanged(
+  auth,
+  async (user) => {
+
+    if (!user) {
+
+      window.location.href =
+        "index.html";
+
+      return;
+    }
+
+
+    const unlocked =
+      sessionStorage.getItem(
+        "privacyUnlocked"
+      );
+
+
+    if (unlocked !== user.uid) {
+
+      window.location.href =
+        "privacy-lock.html";
+
+      return;
+    }
+
+
+    currentUser = user;
+
+
+    if (!viewedUid) {
+
+      viewedUid =
+        currentUser.uid;
 
     }
-  );
-
-}
 
 
-/* --------------------------------
-   LOAD PROFILE
--------------------------------- */
+    await loadProfile();
+
+  }
+);
+
+
+// ========================================
+// LOAD PROFILE
+// ========================================
 
 async function loadProfile() {
 
@@ -92,98 +144,326 @@ async function loadProfile() {
       doc(
         db,
         "users",
-        profileUid
+        viewedUid
       );
 
 
     const snapshot =
-      await getDoc(userRef);
+      await getDoc(
+        userRef
+      );
 
 
     if (!snapshot.exists()) {
 
-      showError(
-        "This user profile does not exist."
-      );
+      profileName.textContent =
+        "User not found";
+
+      profileActions.innerHTML =
+        "";
 
       return;
-
     }
 
 
-    const user =
+    viewedUser =
       snapshot.data();
 
 
-    profileName.textContent =
-      user.displayName || "User";
+    renderProfile();
 
 
-    profileHandle.textContent =
-      user.handle
-        ? "@" + user.handle
-        : "";
+    if (
+      viewedUid ===
+      currentUser.uid
+    ) {
 
-
-    profileBio.textContent =
-      user.bio || "No bio yet.";
-
-
-    if (user.photoURL) {
-
-      profileAvatar.innerHTML = `
-        <img
-          src="${escapeAttribute(user.photoURL)}"
-          alt="Profile picture"
-        >
-      `;
+      renderOwnProfileActions();
 
     } else {
 
-      profileAvatar.textContent =
-        getInitials(
-          user.displayName || "User"
-        );
+      await renderOtherProfileActions();
 
     }
-
-
-    chatBtn.addEventListener(
-      "click",
-      () => {
-
-        alert(
-          "Chat will be connected in the next build phase."
-        );
-
-      }
-    );
-
-
-    friendBtn.addEventListener(
-      "click",
-      () => {
-
-        alert(
-          "Friend requests will be connected in the next build phase."
-        );
-
-      }
-    );
-
-
-    shareBtn.addEventListener(
-      "click",
-      shareProfile
-    );
 
 
   } catch (error) {
 
     console.error(error);
 
-    showError(
-      "Could not load this profile."
+    profileName.textContent =
+      "Could not load profile.";
+
+  }
+
+}
+
+
+// ========================================
+// RENDER PROFILE
+// ========================================
+
+function renderProfile() {
+
+  profileName.textContent =
+    viewedUser.displayName ||
+    "User";
+
+
+  profileHandle.textContent =
+    viewedUser.handle
+      ? `@${viewedUser.handle}`
+      : "";
+
+
+  profileBio.textContent =
+    viewedUser.bio ||
+    "";
+
+
+  if (viewedUser.photoURL) {
+
+    profileAvatar.innerHTML =
+      `<img
+        src="${escapeAttribute(
+          viewedUser.photoURL
+        )}"
+        alt=""
+      >`;
+
+  } else {
+
+    profileAvatar.textContent =
+      "👤";
+
+  }
+
+}
+
+
+// ========================================
+// OWN PROFILE
+// ========================================
+
+function renderOwnProfileActions() {
+
+  profileActions.innerHTML = `
+
+    <button
+      id="editProfileBtn"
+      class="primary-btn"
+      type="button"
+    >
+      Edit Profile
+    </button>
+
+    <button
+      id="settingsBtn"
+      class="secondary-btn"
+      type="button"
+    >
+      Settings
+    </button>
+
+  `;
+
+
+  document
+    .getElementById(
+      "editProfileBtn"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        window.location.href =
+          "edit-profile.html";
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "settingsBtn"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        window.location.href =
+          "settings.html";
+
+      }
+    );
+
+}
+
+
+// ========================================
+// OTHER PROFILE
+// ========================================
+
+async function renderOtherProfileActions() {
+
+  const friendship =
+    await getFriendshipStatus(
+      currentUser.uid,
+      viewedUid
+    );
+
+
+  if (
+    friendship ===
+    "friends"
+  ) {
+
+    profileActions.innerHTML = `
+
+      <button
+        id="chatBtn"
+        class="primary-btn"
+        type="button"
+      >
+        💬 Chat
+      </button>
+
+      <button
+        id="shareProfileBtn"
+        class="secondary-btn"
+        type="button"
+      >
+        Share Profile
+      </button>
+
+    `;
+
+
+    document
+      .getElementById(
+        "chatBtn"
+      )
+      .addEventListener(
+        "click",
+        () => {
+
+          window.location.href =
+            `chat.html?uid=${encodeURIComponent(
+              viewedUid
+            )}`;
+
+        }
+      );
+
+
+  } else if (
+    friendship ===
+    "request_sent"
+  ) {
+
+    profileActions.innerHTML = `
+
+      <button
+        class="secondary-btn"
+        type="button"
+        disabled
+      >
+        Request Sent
+      </button>
+
+      <button
+        id="shareProfileBtn"
+        class="secondary-btn"
+        type="button"
+      >
+        Share Profile
+      </button>
+
+    `;
+
+
+  } else if (
+    friendship ===
+    "request_received"
+  ) {
+
+    profileActions.innerHTML = `
+
+      <button
+        id="acceptBtn"
+        class="primary-btn"
+        type="button"
+      >
+        Accept Request
+      </button>
+
+      <button
+        id="shareProfileBtn"
+        class="secondary-btn"
+        type="button"
+      >
+        Share Profile
+      </button>
+
+    `;
+
+
+    document
+      .getElementById(
+        "acceptBtn"
+      )
+      .addEventListener(
+        "click",
+        acceptIncomingRequest
+      );
+
+
+  } else {
+
+    profileActions.innerHTML = `
+
+      <button
+        id="addFriendBtn"
+        class="primary-btn"
+        type="button"
+      >
+        Add Friend
+      </button>
+
+      <button
+        id="shareProfileBtn"
+        class="secondary-btn"
+        type="button"
+      >
+        Share Profile
+      </button>
+
+    `;
+
+
+    document
+      .getElementById(
+        "addFriendBtn"
+      )
+      .addEventListener(
+        "click",
+        sendFriendRequest
+      );
+
+  }
+
+
+  const shareBtn =
+    document.getElementById(
+      "shareProfileBtn"
+    );
+
+
+  if (shareBtn) {
+
+    shareBtn.addEventListener(
+      "click",
+      shareProfile
     );
 
   }
@@ -191,14 +471,312 @@ async function loadProfile() {
 }
 
 
-/* --------------------------------
-   SHARE
--------------------------------- */
+// ========================================
+// FRIENDSHIP STATUS
+// ========================================
+
+async function getFriendshipStatus(
+  uid1,
+  uid2
+) {
+
+  const firstId =
+    `${uid1}_${uid2}`;
+
+  const secondId =
+    `${uid2}_${uid1}`;
+
+
+  const friendRef =
+    doc(
+      db,
+      "friendships",
+      getFriendshipId(
+        uid1,
+        uid2
+      )
+    );
+
+
+  const friendSnap =
+    await getDoc(
+      friendRef
+    );
+
+
+  if (friendSnap.exists()) {
+
+    return "friends";
+
+  }
+
+
+  const sentSnap =
+    await getDocs(
+      query(
+        collection(
+          db,
+          "friendRequests"
+        ),
+        where(
+          "fromUid",
+          "==",
+          uid1
+        ),
+        where(
+          "toUid",
+          "==",
+          uid2
+        ),
+        where(
+          "status",
+          "==",
+          "pending"
+        ),
+        limit(1)
+      )
+    );
+
+
+  if (!sentSnap.empty) {
+
+    return "request_sent";
+
+  }
+
+
+  const receivedSnap =
+    await getDocs(
+      query(
+        collection(
+          db,
+          "friendRequests"
+        ),
+        where(
+          "fromUid",
+          "==",
+          uid2
+        ),
+        where(
+          "toUid",
+          "==",
+          uid1
+        ),
+        where(
+          "status",
+          "==",
+          "pending"
+        ),
+        limit(1)
+      )
+    );
+
+
+  if (!receivedSnap.empty) {
+
+    return "request_received";
+
+  }
+
+
+  return "none";
+
+}
+
+
+// ========================================
+// SEND REQUEST
+// ========================================
+
+async function sendFriendRequest() {
+
+  const requestId =
+    `${currentUser.uid}_${viewedUid}`;
+
+
+  try {
+
+    await setDoc(
+      doc(
+        db,
+        "friendRequests",
+        requestId
+      ),
+      {
+
+        fromUid:
+          currentUser.uid,
+
+        toUid:
+          viewedUid,
+
+        status:
+          "pending",
+
+        createdAt:
+          new Date().toISOString()
+
+      }
+    );
+
+
+    alert(
+      "Friend request sent!"
+    );
+
+
+    await renderOtherProfileActions();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "Could not send request."
+    );
+
+  }
+
+}
+
+
+// ========================================
+// ACCEPT REQUEST
+// ========================================
+
+async function acceptIncomingRequest() {
+
+  try {
+
+    const requestQuery =
+      query(
+        collection(
+          db,
+          "friendRequests"
+        ),
+        where(
+          "fromUid",
+          "==",
+          viewedUid
+        ),
+        where(
+          "toUid",
+          "==",
+          currentUser.uid
+        ),
+        where(
+          "status",
+          "==",
+          "pending"
+        ),
+        limit(1)
+      );
+
+
+    const snapshot =
+      await getDocs(
+        requestQuery
+      );
+
+
+    if (snapshot.empty) {
+
+      alert(
+        "Request no longer exists."
+      );
+
+      return;
+
+    }
+
+
+    const requestDoc =
+      snapshot.docs[0];
+
+
+    await setDoc(
+      doc(
+        db,
+        "friendships",
+        getFriendshipId(
+          currentUser.uid,
+          viewedUid
+        )
+      ),
+      {
+
+        users: [
+          currentUser.uid,
+          viewedUid
+        ],
+
+        createdAt:
+          new Date().toISOString()
+
+      }
+    );
+
+
+    await setDoc(
+      requestDoc.ref,
+      {
+
+        status:
+          "accepted",
+
+        respondedAt:
+          new Date().toISOString()
+
+      },
+      {
+        merge: true
+      }
+    );
+
+
+    await renderOtherProfileActions();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    alert(
+      "Could not accept request."
+    );
+
+  }
+
+}
+
+
+// ========================================
+// FRIENDSHIP ID
+// ========================================
+
+function getFriendshipId(
+  uid1,
+  uid2
+) {
+
+  return [uid1, uid2]
+    .sort()
+    .join("_");
+
+}
+
+
+// ========================================
+// SHARE PROFILE
+// ========================================
 
 async function shareProfile() {
 
-  const url =
-    window.location.href;
+  const profileUrl =
+    `${window.location.origin}/profile.html?uid=${encodeURIComponent(
+      viewedUid
+    )}`;
 
 
   try {
@@ -210,21 +788,24 @@ async function shareProfile() {
       await navigator.share({
 
         title:
-          profileName.textContent,
+          viewedUser.displayName,
 
         text:
-          `Check out @${profileHandle.textContent.replace("@", "")}`,
+          `Check out @${viewedUser.handle}`,
 
-        url
+        url:
+          profileUrl
 
       });
 
     } else {
 
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(
+        profileUrl
+      );
 
       alert(
-        "Profile link copied."
+        "Profile link copied!"
       );
 
     }
@@ -232,7 +813,7 @@ async function shareProfile() {
   } catch (error) {
 
     console.log(
-      "Share cancelled or unavailable."
+      "Share cancelled."
     );
 
   }
@@ -240,54 +821,24 @@ async function shareProfile() {
 }
 
 
-/* --------------------------------
-   HELPERS
--------------------------------- */
+// ========================================
+// ESCAPE
+// ========================================
 
-function showError(text) {
+function escapeHTML(value) {
 
-  profileError.textContent = text;
-
-  profileError.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-function getInitials(name) {
-
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(
-      word =>
-        word.charAt(0).toUpperCase()
-    )
-    .join("");
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
 
 function escapeAttribute(value) {
 
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return escapeHTML(value);
 
 }
-
-
-document
-  .getElementById("backBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      history.back();
-
-    }
-  );
