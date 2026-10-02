@@ -163,19 +163,19 @@ async function loadUsers() {
 
   } catch (error) {
 
-    console.error(
-      "Load users error:",
-      error
-    );
+  console.error(
+    "Load users error:",
+    error
+  );
 
-
-    usersList.innerHTML = `
-      <p class="auth-message error">
-        Could not load users.
-      </p>
-    `;
-
-  }
+  usersList.innerHTML = `
+    <p class="auth-message error">
+      Firestore error: ${escapeHTML(
+        error.code || error.message
+      )}
+    </p>
+  `;
+}
 
 }
 
@@ -668,7 +668,8 @@ async function updateRequest(
     );
 
 
-  } catch (error) {
+  } 
+  catch (error) {
 
     console.error(
       "Update request error:",
