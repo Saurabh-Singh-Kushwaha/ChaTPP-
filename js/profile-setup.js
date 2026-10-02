@@ -266,7 +266,7 @@ form.addEventListener("submit", async (event) => {
       error.message === "PROFILE_ALREADY_EXISTS"
     ) {
 
-      window.location.href = "home.html";
+      window.location.href = "privacy-lock.html";
 
     } else {
 
