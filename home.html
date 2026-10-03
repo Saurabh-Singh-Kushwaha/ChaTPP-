@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#6c63ff"
+  >
+
+  <title>Home</title>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <header class="home-header">
+
+    <div>
+      <h1>Connect</h1>
+      <p class="muted">Find people you know</p>
+    </div>
+
+    <div class="home-actions">
+
+      <button
+        id="notificationsBtn"
+        class="icon-btn"
+        type="button"
+        aria-label="Notifications"
+      >
+        🔔
+        <span
+          id="requestBadge"
+          class="notification-badge hidden"
+        >
+          0
+        </span>
+      </button>
+
+      <button
+        id="myProfileBtn"
+        class="profile-mini-btn"
+        type="button"
+        aria-label="My Profile"
+      >
+        👤
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main class="home-container">
+
+    <!-- SEARCH -->
+
+    <div class="search-box">
+
+      <span>🔎</span>
+
+      <input
+        id="userSearch"
+        type="search"
+        placeholder="Search name or @handle..."
+        autocomplete="off"
+      >
+
+    </div>
+
+
+    <!-- NOTIFICATIONS -->
+
+    <section
+      id="notificationsPanel"
+      class="notification-panel hidden"
+    >
+
+      <div class="section-heading">
+        <h2>Friend Requests</h2>
+      </div>
+
+      <div id="requestList">
+      </div>
+
+    </section>
+
+
+    <!-- USERS -->
+
+    <section>
+
+      <div class="section-heading">
+
+        <h2>People</h2>
+
+      </div>
+
+      <div id="usersList">
+
+        <p class="muted">
+          Loading users...
+        </p>
+
+      </div>
+
+    </section>
+
+    <button id="logoutBtn" class="secondary-btn logout-home-btn" type="button">Log out</button>
+
+  </main>
+
+
+  <script
+    type="module"
+    src="js/home.js"
+  ></script>
+
+</body>
+</html>
